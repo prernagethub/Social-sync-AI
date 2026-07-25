@@ -1,8 +1,8 @@
--- SocialSync AI - Supabase Database Schema
--- Table: content_calendar
-
+-- SocialSync AI - Multi-User Supabase Database Schema
+-- 1. Main Content Calendar Table
 create table if not exists content_calendar (
     id uuid primary key default gen_random_uuid(),
+    user_id uuid, -- Multi-tenant User ID
     title text not null,
     caption text,
     platform text not null,
@@ -13,9 +13,18 @@ create table if not exists content_calendar (
     updated_at timestamptz default now()
 );
 
--- Option A: Disable RLS for unrestricted demo read/write access (RECOMMENDED for hackathons)
-alter table content_calendar disable row level security;
+-- 2. Multi-User Social Accounts Connection Table
+create table if not exists user_social_accounts (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid,
+    platform text not null, -- 'linkedin', 'twitter', 'instagram'
+    account_name text,
+    access_token text not null,
+    account_urn text,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
 
--- Option B: Permissive RLS Policy for all operations
--- drop policy if exists "Enable full access for all users" on content_calendar;
--- create policy "Enable full access for all users" on content_calendar for all using (true) with check (true);
+-- Enable RLS & Disable restrictions for hackathon demo
+alter table content_calendar disable row level security;
+alter table user_social_accounts disable row level security;

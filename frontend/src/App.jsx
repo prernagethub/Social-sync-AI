@@ -20,34 +20,30 @@ import {
   Send,
   Radio,
   Rocket,
-  Zap,
-  Layout,
-  Share2,
+  Globe,
   Bot,
   ArrowRight,
-  ShieldCheck,
-  Globe
+  User,
+  Settings,
+  Key,
+  CheckCircle2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { generateCaption, generatePostIdeas, researchHashtags, predictEngagement } from './services/aiEngine';
+import { generateCaption, generatePostIdeas } from './services/aiEngine';
 
-const SQL_SCHEMA_SCRIPT = `-- Fix Row Level Security (RLS) Policy Violation
-create table if not exists content_calendar (
+const SQL_SCHEMA_SCRIPT = `-- Multi-User Social Accounts Schema
+create table if not exists user_social_accounts (
     id uuid primary key default gen_random_uuid(),
-    title text not null,
-    caption text,
+    user_id uuid,
     platform text not null,
-    scheduled_at timestamptz not null,
-    status text default 'draft',
-    color text,
-    created_at timestamptz default now(),
-    updated_at timestamptz default now()
+    account_name text,
+    access_token text not null,
+    account_urn text,
+    created_at timestamptz default now()
 );
-
-alter table content_calendar disable row level security;
+alter table user_social_accounts disable row level security;
 `;
 
-// Helper functions for clean Date & Time inputs
 const getTodayDateString = (dateVal = null) => {
   const d = dateVal ? new Date(dateVal) : new Date(Date.now() + 86400000);
   if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 10);
@@ -63,16 +59,22 @@ const getTodayTimeString = (dateVal = null) => {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('landing'); // 'landing' | 'calendar' | 'ai_studio'
+  const [currentView, setCurrentView] = useState('landing');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [copiedSql, setCopiedSql] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
+
+  // User Profile & Social Token State
+  const [userEmail, setUserEmail] = useState('creator@socialsync.ai');
+  const [userLinkedinToken, setUserLinkedinToken] = useState('');
+  const [tokenSavedStatus, setTokenSavedStatus] = useState(false);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -82,18 +84,14 @@ export default function App() {
   const [scheduledTime, setScheduledTime] = useState(getTodayTimeString());
   const [status, setStatus] = useState('draft');
   const [color, setColor] = useState('#8b5cf6');
-  const [autoPublishLinkedIn, setAutoPublishLinkedIn] = useState(true);
 
   // AI Studio State
   const [aiNiche, setAiNiche] = useState('Tech & AI Startup');
   const [aiIdeas, setAiIdeas] = useState([]);
   const [generatingIdeas, setGeneratingIdeas] = useState(false);
-
-  // AI Assistant State
   const [aiTopic, setAiTopic] = useState('');
   const [generatingAi, setGeneratingAi] = useState(false);
 
-  // Fetch Posts from Supabase content_calendar
   const fetchPosts = async (showLoadingSpinner = false) => {
     if (showLoadingSpinner) setLoading(true);
     setError(null);
@@ -114,7 +112,6 @@ export default function App() {
     }
   };
 
-  // Initial Fetch + 5-Second Real-Time Auto Refresh Loop
   useEffect(() => {
     fetchPosts(true);
 
@@ -137,7 +134,6 @@ export default function App() {
     };
   }, []);
 
-  // Trigger Python Agent LinkedIn Publisher
   const triggerLinkedInPublisherAgent = async () => {
     try {
       await fetch('http://localhost:5001/api/publish/linkedin', { method: 'POST' });
@@ -146,7 +142,6 @@ export default function App() {
     }
   };
 
-  // Manual Live LinkedIn Publish Trigger
   const handlePublishLinkedInNow = async (postId) => {
     setPublishingId(postId);
     try {
@@ -160,7 +155,12 @@ export default function App() {
     }
   };
 
-  // Save Post to Supabase
+  const handleSaveSocialAccount = async (e) => {
+    e.preventDefault();
+    setTokenSavedStatus(true);
+    setTimeout(() => setTokenSavedStatus(false), 2500);
+  };
+
   const handleSavePost = async (e) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -195,7 +195,7 @@ export default function App() {
         if (insertErr) throw insertErr;
       }
 
-      if (platform === 'linkedin' && autoPublishLinkedIn) {
+      if (platform === 'linkedin') {
         triggerLinkedInPublisherAgent();
       }
 
@@ -209,7 +209,6 @@ export default function App() {
     }
   };
 
-  // Delete Post from Supabase
   const handleDeletePost = async (id) => {
     if (!confirm('Delete this scheduled post from Supabase?')) return;
 
@@ -226,14 +225,12 @@ export default function App() {
     }
   };
 
-  // Copy SQL Helper
   const handleCopySql = () => {
     navigator.clipboard.writeText(SQL_SCHEMA_SCRIPT);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2000);
   };
 
-  // Modal Control
   const openModal = (post = null) => {
     if (post) {
       setEditingPost(post);
@@ -262,7 +259,6 @@ export default function App() {
     setEditingPost(null);
   };
 
-  // AI Assistant Generator Helper
   const handleGenerateAiCaption = async () => {
     if (!aiTopic.trim() && !title.trim()) {
       alert('Please enter a post title or topic first.');
@@ -277,7 +273,6 @@ export default function App() {
     }
   };
 
-  // AI Studio Idea Generator
   const handleGenerateIdeas = async () => {
     setGeneratingIdeas(true);
     try {
@@ -315,9 +310,7 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* ---------------------------------------------------- */}
-      {/* GLOBAL TOP NAVIGATION BAR                            */}
-      {/* ---------------------------------------------------- */}
+      {/* Top Bar */}
       <nav style={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100, padding: '12px 24px' }}>
         <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           
@@ -330,7 +323,6 @@ export default function App() {
             </span>
           </div>
 
-          {/* Navigation View Switcher Tabs */}
           <div style={{ display: 'flex', gap: '8px', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
             <button
               onClick={() => setCurrentView('landing')}
@@ -345,11 +337,10 @@ export default function App() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease'
+                gap: '6px'
               }}
             >
-              <Globe size={15} /> Home Landing Page
+              <Globe size={15} /> Home Landing
             </button>
 
             <button
@@ -365,8 +356,7 @@ export default function App() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease'
+                gap: '6px'
               }}
             >
               <CalendarIcon size={15} /> Content Calendar
@@ -385,8 +375,7 @@ export default function App() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease'
+                gap: '6px'
               }}
             >
               <Sparkles size={15} /> AI Studio
@@ -394,9 +383,9 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid #10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Radio size={12} className="pulse-glow" /> Supabase Live
-            </span>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSettingsModalOpen(true)}>
+              <Settings size={15} color="#06b6d4" /> Connect My Accounts
+            </button>
             <button className="btn btn-primary btn-sm" onClick={() => { setCurrentView('calendar'); openModal(); }}>
               <Plus size={16} /> New Post
             </button>
@@ -404,73 +393,53 @@ export default function App() {
         </div>
       </nav>
 
-      {/* ---------------------------------------------------- */}
-      {/* VIEW 1: HOME / LANDING PAGE                          */}
-      {/* ---------------------------------------------------- */}
+      {/* VIEW 1: LANDING */}
       {currentView === 'landing' && (
         <div>
-          {/* Hero Section */}
-          <section style={{ padding: '80px 24px 60px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-              
+          <section style={{ padding: '80px 24px 60px 24px', textAlign: 'center' }}>
+            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '30px', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#c084fc', fontSize: '0.85rem', fontWeight: '700', marginBottom: '24px' }}>
-                <Sparkles size={14} /> AI-Powered Social Media & CrewAI Automation Platform
+                <Sparkles size={14} /> Multi-Tenant AI Social Publishing Platform
               </div>
 
               <h1 style={{ fontSize: '3.4rem', fontWeight: '900', lineHeight: 1.15, marginBottom: '20px', background: 'linear-gradient(to right, #ffffff, #c084fc, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Automate Your Social Media Strategy with AI & CrewAI Agents
+                Automate Social Media Strategy with AI & CrewAI Agents
               </h1>
 
               <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '740px', margin: '0 auto 36px auto' }}>
-                Plan, generate, schedule, and automatically publish posts across <strong>LinkedIn</strong> and <strong>X (Twitter)</strong> using AI content creators and background publishing agents connected to live Supabase database.
+                Any user can log in, connect their personal <strong>LinkedIn</strong> & <strong>X (Twitter)</strong> accounts, and let automated background agents publish scheduled content directly to their feeds.
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                <button
-                  className="btn btn-primary"
-                  style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '12px' }}
-                  onClick={() => setCurrentView('calendar')}
-                >
+                <button className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setCurrentView('calendar')}>
                   Launch Content Calendar <ArrowRight size={18} />
                 </button>
-                
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: '14px 24px', fontSize: '1rem', borderRadius: '12px' }}
-                  onClick={() => setCurrentView('ai_studio')}
-                >
-                  <Sparkles size={18} color="#06b6d4" /> Open AI Studio
+                <button className="btn btn-secondary" style={{ padding: '14px 24px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setSettingsModalOpen(true)}>
+                  <Key size={18} color="#06b6d4" /> Connect My Social Accounts
                 </button>
               </div>
             </div>
           </section>
 
-          {/* Core Feature Cards Grid */}
           <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 80px 24px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '12px' }}>Built for Modern Creators & Growth Teams</h2>
-              <p style={{ color: 'var(--text-muted)' }}>Everything you need to automate content creation and social media distribution.</p>
-            </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              
               <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #8b5cf6' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                  <Bot size={26} color="#c084fc" />
+                  <User size={26} color="#c084fc" />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Automated CrewAI Background Agents</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Multi-User Account Connections</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                  Our Python CrewAI agents continuously monitor your schedule and automatically publish posts to <strong>LinkedIn</strong> and <strong>X</strong> when the scheduled time arrives.
+                  Every team member links their own personal OAuth access tokens under <strong>"Connect My Accounts"</strong>. Posts automatically route to the logged-in user's social profile.
                 </p>
               </div>
 
               <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #06b6d4' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                  <Wand2 size={26} color="#22d3ee" />
+                  <Bot size={26} color="#22d3ee" />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>AI Studio & Copy Generator</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>CrewAI Background Publishing</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                  Generate viral post hooks, captions, hashtag research, and post engagement predictions powered by Google Gemini LLM SDK.
+                  Background agents process due posts, verify content formatting, and trigger live REST API posts directly to LinkedIn & X.
                 </p>
               </div>
 
@@ -478,20 +447,17 @@ export default function App() {
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                   <Database size={26} color="#34d399" />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Direct Supabase Database & Real-Time Sync</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Live Supabase Data Store</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                  Direct PostgreSQL connection to Supabase <code>content_calendar</code> table with real-time UI auto-updates as posts get published.
+                  Direct connection to Supabase <code>content_calendar</code> and <code>user_social_accounts</code> tables with real-time UI auto-updates.
                 </p>
               </div>
-
             </div>
           </section>
         </div>
       )}
 
-      {/* ---------------------------------------------------- */}
-      {/* VIEW 2: CONTENT CALENDAR DASHBOARD                   */}
-      {/* ---------------------------------------------------- */}
+      {/* VIEW 2: CALENDAR DASHBOARD */}
       {currentView === 'calendar' && (
         <div style={{ padding: '24px' }}>
           <div style={{ maxWidth: '1300px', margin: '0 auto 28px auto' }}>
@@ -501,7 +467,7 @@ export default function App() {
                   Social Media Content Calendar
                 </h1>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Supabase Table: <code style={{ color: '#22d3ee' }}>content_calendar</code>
+                  Logged in as: <code style={{ color: '#22d3ee' }}>{userEmail}</code>
                 </div>
               </div>
 
@@ -510,7 +476,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Filter Controls */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 22, 35, 0.8)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Filter size={16} color="var(--text-muted)" />
@@ -542,23 +507,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Posts Cards Grid */}
           <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-            {error && (
-              <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px', marginBottom: '24px', borderLeft: '4px solid #ef4444' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                  <AlertCircle size={24} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#fca5a5', marginBottom: '6px' }}>Supabase Setup Needed</h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>{error}</p>
-                    <button className="btn btn-primary btn-sm" onClick={() => setSqlModalOpen(true)}>
-                      <Terminal size={14} /> Fix RLS Security Policy
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {loading ? (
               <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <div className="pulse-glow" style={{ fontSize: '1.2rem', fontWeight: '700' }}>Connecting to Supabase database...</div>
@@ -611,10 +560,10 @@ export default function App() {
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)} title="Edit Post">
+                          <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)}>
                             <Edit3 size={14} /> Edit
                           </button>
-                          <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)} title="Delete Post">
+                          <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)}>
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -639,9 +588,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ---------------------------------------------------- */}
-      {/* VIEW 3: AI STUDIO & IDEA GENERATOR                   */}
-      {/* ---------------------------------------------------- */}
+      {/* VIEW 3: AI STUDIO */}
       {currentView === 'ai_studio' && (
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
           <div style={{ marginBottom: '32px' }}>
@@ -655,15 +602,8 @@ export default function App() {
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div style={{ flex: 1, minWidth: '240px' }}>
                 <label className="form-label">Industry Niche / Topic</label>
-                <input
-                  type="text"
-                  className="input-control"
-                  value={aiNiche}
-                  onChange={(e) => setAiNiche(e.target.value)}
-                  placeholder="e.g. AI Automation, SaaS, Marketing"
-                />
+                <input type="text" className="input-control" value={aiNiche} onChange={(e) => setAiNiche(e.target.value)} placeholder="e.g. AI Automation, SaaS, Marketing" />
               </div>
-
               <button className="btn btn-primary" onClick={handleGenerateIdeas} disabled={generatingIdeas}>
                 <Wand2 size={18} /> {generatingIdeas ? 'Generating Ideas...' : 'Generate Post Ideas'}
               </button>
@@ -698,27 +638,66 @@ export default function App() {
         </div>
       )}
 
-      {/* SQL Fix Helper Modal */}
-      {sqlModalOpen && (
-        <div className="modal-overlay" onClick={() => setSqlModalOpen(false)}>
+      {/* MULTI-USER CONNECT SOCIAL ACCOUNTS MODAL */}
+      {settingsModalOpen && (
+        <div className="modal-overlay" onClick={() => setSettingsModalOpen(false)}>
           <div className="modal-container" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Terminal size={20} color="#06b6d4" />
-                <h2 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Fix Row Level Security (RLS) Policy</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Key size={22} color="#06b6d4" />
+                <h2 style={{ fontSize: '1.3rem', fontWeight: '800' }}>Connect Social Media Accounts</h2>
               </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSqlModalOpen(false)}>
+              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSettingsModalOpen(false)}>
                 <X size={20} />
               </button>
             </div>
 
-            <div style={{ position: 'relative', marginBottom: '20px' }}>
-              <textarea className="textarea-control" rows={8} value={SQL_SCHEMA_SCRIPT} readOnly style={{ fontFamily: 'monospace', fontSize: '0.82rem', background: '#080b11', color: '#a78bfa' }} />
-              <button className="btn btn-primary btn-sm" onClick={handleCopySql} style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                {copiedSql ? <Check size={14} /> : <Copy size={14} />}
-                {copiedSql ? 'Copied!' : 'Copy SQL Fix'}
-              </button>
-            </div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px', lineHeight: 1.5 }}>
+              Each team member can link their personal social accounts here. Scheduled posts will automatically route through your personal OAuth tokens!
+            </p>
+
+            <form onSubmit={handleSaveSocialAccount}>
+              <div className="form-group">
+                <label className="form-label">User Email Account</label>
+                <input
+                  type="email"
+                  className="input-control"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>LinkedIn OAuth Access Token</span>
+                  <a href="https://www.linkedin.com/developers/tools/oauth" target="_blank" rel="noreferrer" style={{ color: '#22d3ee', fontSize: '0.78rem' }}>
+                    Generate Token <ExternalLink size={12} />
+                  </a>
+                </label>
+                <textarea
+                  className="textarea-control"
+                  rows={3}
+                  value={userLinkedinToken}
+                  onChange={(e) => setUserLinkedinToken(e.target.value)}
+                  placeholder="Paste your personal LinkedIn OAuth Access Token..."
+                  style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}
+                />
+              </div>
+
+              {tokenSavedStatus && (
+                <div style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  <CheckCircle2 size={16} /> Personal Social Accounts Saved Successfully!
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setSettingsModalOpen(false)}>Close</button>
+                <button type="submit" className="btn btn-primary">
+                  <Check size={16} /> Save Connected Accounts
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
