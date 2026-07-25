@@ -1,0 +1,4 @@
+supabase>=2.4.0
+python-dotenv>=1.0.0
+crewai>=0.28.0
+tweepy>=4.14.0

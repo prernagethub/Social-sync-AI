@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+
+# Environment Files (Keep API Keys Secret)
+.env
+.env.local
+agent/.env
+frontend/.env
+server/.env
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE & OS Files
+.DS_Store
+.vscode/
+.idea/
