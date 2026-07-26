@@ -683,12 +683,13 @@ export default function App() {
     return location.pathname.startsWith(path);
   };
 
+  // Indian Rupee (₹) Pricing Plans starting from ₹99 / month
   const pricingPlans = [
     {
       name: 'Starter Creator',
-      priceMonthly: '$29',
-      priceYearly: '$24',
-      badge: null,
+      priceMonthly: '₹99',
+      priceYearly: '₹79',
+      badge: 'STARTER',
       desc: 'Ideal for solo creators & micro-influencers.',
       features: [
         '5 Social Channels (LinkedIn, X, IG)',
@@ -701,8 +702,8 @@ export default function App() {
     },
     {
       name: 'Pro Team',
-      priceMonthly: '$79',
-      priceYearly: '$64',
+      priceMonthly: '₹499',
+      priceYearly: '₹399',
       badge: 'MOST POPULAR',
       desc: 'Perfect for fast-growing brands & marketing teams.',
       features: [
@@ -717,8 +718,8 @@ export default function App() {
     },
     {
       name: 'Agency Enterprise',
-      priceMonthly: '$199',
-      priceYearly: '$159',
+      priceMonthly: '₹1,499',
+      priceYearly: '₹1,199',
       badge: 'ENTERPRISE',
       desc: 'For digital agencies managing multi-brand portfolios.',
       features: [
@@ -994,7 +995,7 @@ export default function App() {
                     const pricingElem = document.getElementById('home-pricing-section');
                     if (pricingElem) pricingElem.scrollIntoView({ behavior: 'smooth' });
                   }}>
-                    View Pricing Plans <CreditCard size={20} color="#06b6d4" />
+                    View Pricing Plans (From ₹99) <CreditCard size={20} color="#06b6d4" />
                   </button>
                 </div>
 
@@ -1170,12 +1171,12 @@ export default function App() {
             {/* PRICING SECTION AT THE END OF HOME PAGE */}
             <section id="home-pricing-section" style={{ maxWidth: '1180px', margin: '0 auto 100px auto', padding: '0 24px' }}>
               <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>SIMPLE TRANSPARENT PRICING</span>
+                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>SIMPLE TRANSPARENT PRICING FROM ₹99/MO</span>
                 <h2 style={{ fontSize: '2.6rem', fontWeight: '800', marginTop: '6px' }}>
                   Choose the Perfect Plan for Your Team
                 </h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginTop: '8px' }}>
-                  Scale your social reach without blowing your marketing budget.
+                  Scale your social reach without blowing your marketing budget. Plans start from just ₹99/month.
                 </p>
 
                 <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(15, 22, 35, 0.9)', padding: '4px', borderRadius: '30px', border: '1px solid var(--border-color)', marginTop: '24px' }}>
@@ -1597,12 +1598,12 @@ export default function App() {
         <Route path="/pricing" element={
           <div style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 24px 60px 24px' }}>
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-              <span className="badge badge-glow" style={{ marginBottom: '12px' }}>SIMPLE TRANSPARENT PRICING</span>
+              <span className="badge badge-glow" style={{ marginBottom: '12px' }}>SIMPLE TRANSPARENT PRICING FROM ₹99/MO</span>
               <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginTop: '6px' }}>
                 Choose the Perfect Plan for Your Team
               </h1>
               <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginTop: '8px' }}>
-                Scale your social reach without blowing your marketing budget.
+                Scale your social reach without blowing your marketing budget. Plans start from just ₹99/month.
               </p>
 
               <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(15, 22, 35, 0.9)', padding: '4px', borderRadius: '30px', border: '1px solid var(--border-color)', marginTop: '24px' }}>
