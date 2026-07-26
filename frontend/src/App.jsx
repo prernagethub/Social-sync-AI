@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
 import { supabase } from './supabaseClient';
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   Calendar as CalendarIcon,
@@ -1048,9 +1048,9 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* GLOBAL TOASTIFY NOTIFICATION CONTAINER (2 SECOND AUTO-CLOSE) */}
+      {/* GLOBAL TOASTIFY NOTIFICATION CONTAINER (2 SECOND AUTO-CLOSE, BOTTOM-RIGHT SMOOTH SLIDE) */}
       <ToastContainer
-        position="top-right"
+        position="bottom-right"
         autoClose={2000}
         hideProgressBar={false}
         newestOnTop
@@ -1060,6 +1060,7 @@ export default function App() {
         draggable
         pauseOnHover
         theme="dark"
+        transition={Slide}
       />
 
       <div>
