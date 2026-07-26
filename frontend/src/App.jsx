@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import {
   Calendar as CalendarIcon,
@@ -105,8 +106,10 @@ const getTodayTimeString = (dateVal = null) => {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('calendar'); // 'landing' | 'calendar' | 'ai_studio'
-  const [calendarDisplayMode, setCalendarDisplayMode] = useState('month'); // 'month' | 'cards'
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [calendarDisplayMode, setCalendarDisplayMode] = useState('month');
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
 
   const [posts, setPosts] = useState([]);
@@ -152,7 +155,7 @@ export default function App() {
   const [color, setColor] = useState('#8b5cf6');
 
   // AI Studio Suite State
-  const [aiStudioTab, setAiStudioTab] = useState('ideas'); // 'ideas' | 'caption' | 'hashtags' | 'predict'
+  const [aiStudioTab, setAiStudioTab] = useState('ideas');
   const [aiNiche, setAiNiche] = useState('Tech & AI Startup');
   const [aiIdeas, setAiIdeas] = useState([]);
   const [generatingIdeas, setGeneratingIdeas] = useState(false);
@@ -329,12 +332,6 @@ export default function App() {
     }
   };
 
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(SQL_SCHEMA_SCRIPT);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 2000);
-  };
-
   const openModal = (post = null, targetDateString = null) => {
     if (post) {
       setEditingPost(post);
@@ -363,22 +360,6 @@ export default function App() {
     setEditingPost(null);
   };
 
-  // AI Assistant Generator Helper
-  const handleGenerateAiCaptionInModal = async () => {
-    if (!aiTopic.trim() && !title.trim()) {
-      alert('Please enter a post title or topic first.');
-      return;
-    }
-    setGeneratingAi(true);
-    try {
-      const res = await generateCaption({ topic: aiTopic || title, platform });
-      setCaption(res.caption);
-    } finally {
-      setGeneratingAi(false);
-    }
-  };
-
-  // AI Studio Handlers
   const handleGenerateIdeas = async () => {
     setGeneratingIdeas(true);
     try {
@@ -580,14 +561,21 @@ export default function App() {
     );
   };
 
+  const isActivePath = (path) => {
+    if (path === '/home' || path === '/') {
+      return location.pathname === '/' || location.pathname === '/home';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* NAVBAR */}
+      {/* NAVBAR WITH ROUTING LINKS */}
       <nav style={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100, padding: '12px 24px' }}>
         <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => setCurrentView('landing')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/home')}>
             <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary-glow)' }}>
               <Rocket size={22} color="#fff" />
             </div>
@@ -596,17 +584,18 @@ export default function App() {
             </span>
           </div>
 
+          {/* Navigation Route Buttons */}
           <div style={{ display: 'flex', gap: '8px', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
             <button
-              onClick={() => setCurrentView('landing')}
+              onClick={() => navigate('/home')}
               style={{
                 padding: '8px 16px',
                 borderRadius: '8px',
                 fontSize: '0.85rem',
                 fontWeight: '700',
                 border: 'none',
-                background: currentView === 'landing' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                color: currentView === 'landing' ? '#fff' : 'var(--text-muted)',
+                background: isActivePath('/home') ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                color: isActivePath('/home') ? '#fff' : 'var(--text-muted)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -617,15 +606,15 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setCurrentView('calendar')}
+              onClick={() => navigate('/calendar')}
               style={{
                 padding: '8px 16px',
                 borderRadius: '8px',
                 fontSize: '0.85rem',
                 fontWeight: '700',
                 border: 'none',
-                background: currentView === 'calendar' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                color: currentView === 'calendar' ? '#fff' : 'var(--text-muted)',
+                background: isActivePath('/calendar') ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                color: isActivePath('/calendar') ? '#fff' : 'var(--text-muted)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -636,15 +625,15 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setCurrentView('ai_studio')}
+              onClick={() => navigate('/ai-studio')}
               style={{
                 padding: '8px 16px',
                 borderRadius: '8px',
                 fontSize: '0.85rem',
                 fontWeight: '700',
                 border: 'none',
-                background: currentView === 'ai_studio' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                color: currentView === 'ai_studio' ? '#fff' : 'var(--text-muted)',
+                background: isActivePath('/ai-studio') ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                color: isActivePath('/ai-studio') ? '#fff' : 'var(--text-muted)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -677,382 +666,365 @@ export default function App() {
               </button>
             )}
 
-            <button className="btn btn-primary btn-sm" onClick={() => { setCurrentView('calendar'); openModal(); }}>
+            <button className="btn btn-primary btn-sm" onClick={() => { navigate('/calendar'); openModal(); }}>
               <Plus size={16} /> New Post
             </button>
           </div>
         </div>
       </nav>
 
-      {/* VIEW 1: LANDING PAGE */}
-      {currentView === 'landing' && (
-        <div>
-          <section style={{ padding: '80px 24px 60px 24px', textAlign: 'center' }}>
-            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '30px', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#c084fc', fontSize: '0.85rem', fontWeight: '700', marginBottom: '24px' }}>
-                <Sparkles size={14} /> Multi-Tenant AI Social Publishing Platform
-              </div>
+      {/* REACT ROUTER ROUTES CONFIGURATION */}
+      <Routes>
+        {/* ROUTE 1: / and /home -> HOME LANDING PAGE */}
+        <Route path="/" element={<Navigate to="/calendar" replace />} />
+        <Route path="/home" element={
+          <div>
+            <section style={{ padding: '80px 24px 60px 24px', textAlign: 'center' }}>
+              <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '30px', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#c084fc', fontSize: '0.85rem', fontWeight: '700', marginBottom: '24px' }}>
+                  <Sparkles size={14} /> Multi-Tenant AI Social Publishing Platform
+                </div>
 
-              <h1 style={{ fontSize: '3.4rem', fontWeight: '900', lineHeight: 1.15, marginBottom: '20px', background: 'linear-gradient(to right, #ffffff, #c084fc, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Automate Social Media Strategy with AI & CrewAI Agents
-              </h1>
-
-              <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '740px', margin: '0 auto 36px auto' }}>
-                Sign in, connect your personal <strong>LinkedIn</strong> & <strong>X (Twitter)</strong> accounts, and let automated background agents publish scheduled content directly to your feeds.
-              </p>
-
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                <button className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setCurrentView('calendar')}>
-                  Launch Content Calendar <ArrowRight size={18} />
-                </button>
-                <button className="btn btn-secondary" style={{ padding: '14px 24px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setAuthModalOpen(true)}>
-                  <LogIn size={18} color="#06b6d4" /> Sign In / Create Account
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {/* VIEW 2: CONTENT CALENDAR DASHBOARD */}
-      {currentView === 'calendar' && (
-        <div style={{ padding: '24px' }}>
-          <div style={{ maxWidth: '1300px', margin: '0 auto 24px auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-              <div>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  Social Media Content Calendar
+                <h1 style={{ fontSize: '3.4rem', fontWeight: '900', lineHeight: 1.15, marginBottom: '20px', background: 'linear-gradient(to right, #ffffff, #c084fc, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  Automate Social Media Strategy with AI & CrewAI Agents
                 </h1>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Active User: <code style={{ color: '#22d3ee' }}>{currentUser?.email || 'Guest Mode'}</code>
+
+                <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '740px', margin: '0 auto 36px auto' }}>
+                  Sign in, connect your personal <strong>LinkedIn</strong> & <strong>X (Twitter)</strong> accounts, and let automated background agents publish scheduled content directly to your feeds.
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <button className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => navigate('/calendar')}>
+                    Launch Content Calendar <ArrowRight size={18} />
+                  </button>
+                  <button className="btn btn-secondary" style={{ padding: '14px 24px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setAuthModalOpen(true)}>
+                    <LogIn size={18} color="#06b6d4" /> Sign In / Create Account
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+        } />
+
+        {/* ROUTE 2: /calendar -> CONTENT CALENDAR DASHBOARD */}
+        <Route path="/calendar" element={
+          <div style={{ padding: '24px' }}>
+            <div style={{ maxWidth: '1300px', margin: '0 auto 24px auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+                <div>
+                  <h1 style={{ fontSize: '1.8rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    Social Media Content Calendar
+                  </h1>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    Active User: <code style={{ color: '#22d3ee' }}>{currentUser?.email || 'Guest Mode'}</code>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                    <button
+                      onClick={() => setCalendarDisplayMode('month')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        border: 'none',
+                        background: calendarDisplayMode === 'month' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                        color: calendarDisplayMode === 'month' ? '#fff' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <LayoutGrid size={14} /> 📅 Month Grid
+                    </button>
+
+                    <button
+                      onClick={() => setCalendarDisplayMode('cards')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        border: 'none',
+                        background: calendarDisplayMode === 'cards' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                        color: calendarDisplayMode === 'cards' ? '#fff' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <List size={14} /> 📋 Cards View
+                    </button>
+                  </div>
+
+                  <button className="btn btn-primary" onClick={() => openModal()}>
+                    <Plus size={18} /> Schedule New Post
+                  </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                  <button
-                    onClick={() => setCalendarDisplayMode('month')}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: '6px',
-                      fontSize: '0.8rem',
-                      fontWeight: '700',
-                      border: 'none',
-                      background: calendarDisplayMode === 'month' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                      color: calendarDisplayMode === 'month' ? '#fff' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <LayoutGrid size={14} /> 📅 Month Grid
-                  </button>
-
-                  <button
-                    onClick={() => setCalendarDisplayMode('cards')}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: '6px',
-                      fontSize: '0.8rem',
-                      fontWeight: '700',
-                      border: 'none',
-                      background: calendarDisplayMode === 'cards' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                      color: calendarDisplayMode === 'cards' ? '#fff' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <List size={14} /> 📋 Cards View
-                  </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 22, 35, 0.8)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Filter size={16} color="var(--text-muted)" />
+                  <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)' }}>Filter Channel:</span>
+                  {['all', 'linkedin', 'twitter', 'instagram', 'tiktok', 'facebook'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setFilterPlatform(p)}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '0.78rem',
+                        fontWeight: '600',
+                        border: filterPlatform === p ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                        background: filterPlatform === p ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                        color: filterPlatform === p ? '#c084fc' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {p === 'all' ? '🌐 All Posts' : p}
+                    </button>
+                  ))}
                 </div>
 
-                <button className="btn btn-primary" onClick={() => openModal()}>
-                  <Plus size={18} /> Schedule New Post
+                <button className="btn btn-secondary btn-sm" onClick={() => fetchPosts(false)}>
+                  <RefreshCw size={14} /> Sync Supabase
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 22, 35, 0.8)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Filter size={16} color="var(--text-muted)" />
-                <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)' }}>Filter Channel:</span>
-                {['all', 'linkedin', 'twitter', 'instagram', 'tiktok', 'facebook'].map(p => (
-                  <button
-                    key={p}
-                    onClick={() => setFilterPlatform(p)}
-                    style={{
-                      padding: '4px 12px',
-                      borderRadius: '20px',
-                      fontSize: '0.78rem',
-                      fontWeight: '600',
-                      border: filterPlatform === p ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                      background: filterPlatform === p ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                      color: filterPlatform === p ? '#c084fc' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                      textTransform: 'capitalize'
-                    }}
-                  >
-                    {p === 'all' ? '🌐 All Posts' : p}
-                  </button>
-                ))}
-              </div>
+            <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+              {calendarDisplayMode === 'month' ? (
+                renderMonthGrid()
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  {filteredPosts.map(p => (
+                    <div
+                      key={p.id}
+                      className="glass-panel glass-panel-hover"
+                      style={{
+                        padding: '20px',
+                        borderRadius: '16px',
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '14px',
+                        borderLeft: `5px solid ${p.color || '#8b5cf6'}`
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>{getPlatformIcon(p.platform)}</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{p.platform}</span>
+                          </div>
+                          {getStatusBadge(p.status)}
+                        </div>
 
-              <button className="btn btn-secondary btn-sm" onClick={() => fetchPosts(false)}>
-                <RefreshCw size={14} /> Sync Supabase
-              </button>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', marginBottom: '6px', lineHeight: 1.3 }}>{p.title}</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {p.caption || 'No caption text.'}
+                        </p>
+                      </div>
+
+                      <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                            <Clock size={14} color="#06b6d4" />
+                            <span>{new Date(p.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)}>
+                              <Edit3 size={14} /> Edit
+                            </button>
+                            <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {p.platform === 'linkedin' && p.status !== 'published' && (
+                          <button
+                            className="btn btn-cyan btn-sm"
+                            style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}
+                            onClick={() => handlePublishLinkedInNow(p.id)}
+                            disabled={publishingId === p.id}
+                          >
+                            <Send size={14} /> {publishingId === p.id ? 'Publishing Agent Running...' : '🚀 Publish Live to LinkedIn Agent'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+        } />
 
-          <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-            {calendarDisplayMode === 'month' ? (
-              renderMonthGrid()
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-                {filteredPosts.map(p => (
-                  <div
-                    key={p.id}
-                    className="glass-panel glass-panel-hover"
-                    style={{
-                      padding: '20px',
-                      borderRadius: '16px',
-                      position: 'relative',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: '14px',
-                      borderLeft: `5px solid ${p.color || '#8b5cf6'}`
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '1.2rem' }}>{getPlatformIcon(p.platform)}</span>
-                          <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{p.platform}</span>
+        {/* ROUTE 3: /ai-studio -> FULL 4-IN-1 AI STUDIO SUITE */}
+        <Route path="/ai-studio" element={
+          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
+            <div style={{ marginBottom: '28px' }}>
+              <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                🤖 AI Content Generation & Analytics Studio
+              </h1>
+              <p style={{ color: 'var(--text-muted)' }}>Generate post ideas, viral captions, hashtag research, and predictive engagement scores powered by Gemini LLM.</p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '28px', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <button onClick={() => setAiStudioTab('ideas')} className={`btn ${aiStudioTab === 'ideas' ? 'btn-primary' : 'btn-secondary'}`} style={{ fontSize: '0.85rem' }}>
+                💡 Post Ideas Generator
+              </button>
+              <button onClick={() => setAiStudioTab('caption')} className={`btn ${aiStudioTab === 'caption' ? 'btn-primary' : 'btn-secondary'}`} style={{ fontSize: '0.85rem' }}>
+                ✍️ AI Caption Writer
+              </button>
+              <button onClick={() => setAiStudioTab('hashtags')} className={`btn ${aiStudioTab === 'hashtags' ? 'btn-primary' : 'btn-secondary'}`} style={{ fontSize: '0.85rem' }}>
+                🏷️ Hashtag Research
+              </button>
+              <button onClick={() => setAiStudioTab('predict')} className={`btn ${aiStudioTab === 'predict' ? 'btn-primary' : 'btn-secondary'}`} style={{ fontSize: '0.85rem' }}>
+                📊 Predictive Engagement Score
+              </button>
+            </div>
+
+            {aiStudioTab === 'ideas' && (
+              <div>
+                <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px', marginBottom: '32px' }}>
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1, minWidth: '240px' }}>
+                      <label className="form-label">Industry Niche / Topic</label>
+                      <input type="text" className="input-control" value={aiNiche} onChange={(e) => setAiNiche(e.target.value)} placeholder="e.g. AI Automation, SaaS, Marketing" />
+                    </div>
+                    <button className="btn btn-primary" onClick={handleGenerateIdeas} disabled={generatingIdeas}>
+                      <Wand2 size={18} /> {generatingIdeas ? 'Generating Ideas...' : 'Generate Post Ideas'}
+                    </button>
+                  </div>
+                </div>
+
+                {aiIdeas.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                    {aiIdeas.map((idea, idx) => (
+                      <div key={idx} className="glass-panel" style={{ padding: '20px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <span className="badge status-idea" style={{ marginBottom: '10px', display: 'inline-block' }}>Idea #{idx + 1}</span>
+                          <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>{idea.title || idea}</h3>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{idea.angle || idea.hook || 'High engagement content angle for social media.'}</p>
                         </div>
-                        {getStatusBadge(p.status)}
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}
+                          onClick={() => {
+                            setTitle(idea.title || idea);
+                            setCaption(idea.angle || idea.hook || '');
+                            navigate('/calendar');
+                            openModal();
+                          }}
+                        >
+                          <Plus size={14} /> Schedule this Idea
+                        </button>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', marginBottom: '6px', lineHeight: 1.3 }}>{p.title}</h3>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {p.caption || 'No caption text.'}
-                      </p>
+            {aiStudioTab === 'caption' && (
+              <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Generate Platform Tailored Copy</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                  <div>
+                    <label className="form-label">Post Topic</label>
+                    <input type="text" className="input-control" value={captionTopic} onChange={(e) => setCaptionTopic(e.target.value)} placeholder="e.g. 5 AI Automation Workflows" />
+                  </div>
+                  <div>
+                    <label className="form-label">Target Channel</label>
+                    <select className="select-control" value={captionPlatform} onChange={(e) => setCaptionPlatform(e.target.value)}>
+                      <option value="linkedin">💼 LinkedIn</option>
+                      <option value="twitter">🐦 X / Twitter</option>
+                      <option value="instagram">📸 Instagram</option>
+                      <option value="tiktok">🎵 TikTok</option>
+                    </select>
+                  </div>
+                </div>
+                <button className="btn btn-primary" onClick={handleRunAiCaptionStudio} disabled={generatingCaptionState}>
+                  <Wand2 size={16} /> {generatingCaptionState ? 'Writing Copy...' : 'Generate Copy & Hashtags'}
+                </button>
+
+                {generatedCaptionResult && (
+                  <div style={{ marginTop: '24px', background: 'rgba(0,0,0,0.3)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <h4 style={{ color: '#c084fc', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '700' }}>Generated Copy Result:</h4>
+                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.88rem', color: '#fff', fontFamily: 'inherit' }}>{generatedCaptionResult.caption}</pre>
+                    <button className="btn btn-cyan btn-sm" style={{ marginTop: '12px' }} onClick={() => { setTitle(captionTopic || 'AI Post'); setCaption(generatedCaptionResult.caption); navigate('/calendar'); openModal(); }}>
+                      <Plus size={14} /> Schedule This Copy
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {aiStudioTab === 'hashtags' && (
+              <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Research High Volume & Niche Hashtags</h3>
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+                  <input type="text" className="input-control" value={hashtagTopic} onChange={(e) => setHashtagTopic(e.target.value)} placeholder="Topic keyword..." />
+                  <button className="btn btn-primary" onClick={handleRunHashtagResearch} disabled={researchingTags}>
+                    <Hash size={16} /> {researchingTags ? 'Researching...' : 'Find Hashtags'}
+                  </button>
+                </div>
+
+                {hashtagResults && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginTop: '20px' }}>
+                    <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '16px', borderRadius: '12px' }}>
+                      <h4 style={{ color: '#c084fc', marginBottom: '8px', fontSize: '0.85rem' }}>High Volume Hashtags</h4>
+                      {hashtagResults.highVolume?.map(h => <span key={h.tag} style={{ display: 'inline-block', background: 'rgba(139, 92, 246, 0.2)', padding: '4px 8px', borderRadius: '6px', margin: '4px', fontSize: '0.8rem', color: '#fff' }}>{h.tag}</span>)}
                     </div>
 
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                          <Clock size={14} color="#06b6d4" />
-                          <span>{new Date(p.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)}>
-                            <Edit3 size={14} /> Edit
-                          </button>
-                          <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {p.platform === 'linkedin' && p.status !== 'published' && (
-                        <button
-                          className="btn btn-cyan btn-sm"
-                          style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}
-                          onClick={() => handlePublishLinkedInNow(p.id)}
-                          disabled={publishingId === p.id}
-                        >
-                          <Send size={14} /> {publishingId === p.id ? 'Publishing Agent Running...' : '🚀 Publish Live to LinkedIn Agent'}
-                        </button>
-                      )}
+                    <div style={{ background: 'rgba(6, 182, 212, 0.1)', padding: '16px', borderRadius: '12px' }}>
+                      <h4 style={{ color: '#22d3ee', marginBottom: '8px', fontSize: '0.85rem' }}>Niche Targeted</h4>
+                      {hashtagResults.nicheTargeted?.map(h => <span key={h.tag} style={{ display: 'inline-block', background: 'rgba(6, 182, 212, 0.2)', padding: '4px 8px', borderRadius: '6px', margin: '4px', fontSize: '0.8rem', color: '#fff' }}>{h.tag}</span>)}
                     </div>
                   </div>
-                ))}
+                )}
+              </div>
+            )}
+
+            {aiStudioTab === 'predict' && (
+              <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Predictive Engagement Score Analyzer</h3>
+                <textarea className="textarea-control" rows={4} value={predictCaption} onChange={(e) => setPredictCaption(e.target.value)} style={{ marginBottom: '16px' }} />
+                <button className="btn btn-primary" onClick={handleRunPrediction}>
+                  <TrendingUp size={16} /> Predict Engagement Score
+                </button>
+
+                {predictionResult && (
+                  <div style={{ marginTop: '20px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '20px', borderRadius: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#34d399' }}>{predictionResult.score}%</div>
+                      <div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>Grade: {predictionResult.grade}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Estimated Reach: {predictionResult.estimatedReachMultiplier}</div>
+                      </div>
+                    </div>
+                    {predictionResult.analysis?.map((item, idx) => (
+                      <div key={idx} style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: '4px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CheckCircle2 size={14} color="#34d399" /> {item.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* VIEW 3: FULL 4-IN-1 AI STUDIO SUITE */}
-      {currentView === 'ai_studio' && (
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
-          <div style={{ marginBottom: '28px' }}>
-            <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              🤖 AI Content Generation & Analytics Studio
-            </h1>
-            <p style={{ color: 'var(--text-muted)' }}>Generate post ideas, viral captions, hashtag research, and predictive engagement scores powered by Gemini LLM.</p>
-          </div>
-
-          {/* AI Studio Sub-Tool Tabs */}
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '28px', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <button
-              onClick={() => setAiStudioTab('ideas')}
-              className={`btn ${aiStudioTab === 'ideas' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ fontSize: '0.85rem' }}
-            >
-              💡 Post Ideas Generator
-            </button>
-            <button
-              onClick={() => setAiStudioTab('caption')}
-              className={`btn ${aiStudioTab === 'caption' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ fontSize: '0.85rem' }}
-            >
-              ✍️ AI Caption Writer
-            </button>
-            <button
-              onClick={() => setAiStudioTab('hashtags')}
-              className={`btn ${aiStudioTab === 'hashtags' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ fontSize: '0.85rem' }}
-            >
-              🏷️ Hashtag Research
-            </button>
-            <button
-              onClick={() => setAiStudioTab('predict')}
-              className={`btn ${aiStudioTab === 'predict' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ fontSize: '0.85rem' }}
-            >
-              📊 Predictive Engagement Score
-            </button>
-          </div>
-
-          {/* TAB 1: IDEAS GENERATOR */}
-          {aiStudioTab === 'ideas' && (
-            <div>
-              <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px', marginBottom: '32px' }}>
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                  <div style={{ flex: 1, minWidth: '240px' }}>
-                    <label className="form-label">Industry Niche / Topic</label>
-                    <input type="text" className="input-control" value={aiNiche} onChange={(e) => setAiNiche(e.target.value)} placeholder="e.g. AI Automation, SaaS, Marketing" />
-                  </div>
-                  <button className="btn btn-primary" onClick={handleGenerateIdeas} disabled={generatingIdeas}>
-                    <Wand2 size={18} /> {generatingIdeas ? 'Generating Ideas...' : 'Generate Post Ideas'}
-                  </button>
-                </div>
-              </div>
-
-              {aiIdeas.length > 0 && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                  {aiIdeas.map((idea, idx) => (
-                    <div key={idx} className="glass-panel" style={{ padding: '20px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div>
-                        <span className="badge status-idea" style={{ marginBottom: '10px', display: 'inline-block' }}>Idea #{idx + 1}</span>
-                        <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>{idea.title || idea}</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{idea.angle || idea.hook || 'High engagement content angle for social media.'}</p>
-                      </div>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}
-                        onClick={() => {
-                          setTitle(idea.title || idea);
-                          setCaption(idea.angle || idea.hook || '');
-                          setCurrentView('calendar');
-                          openModal();
-                        }}
-                      >
-                        <Plus size={14} /> Schedule this Idea
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 2: AI CAPTION WRITER */}
-          {aiStudioTab === 'caption' && (
-            <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Generate Platform Tailored Copy</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                <div>
-                  <label className="form-label">Post Topic</label>
-                  <input type="text" className="input-control" value={captionTopic} onChange={(e) => setCaptionTopic(e.target.value)} placeholder="e.g. 5 AI Automation Workflows" />
-                </div>
-                <div>
-                  <label className="form-label">Target Channel</label>
-                  <select className="select-control" value={captionPlatform} onChange={(e) => setCaptionPlatform(e.target.value)}>
-                    <option value="linkedin">💼 LinkedIn</option>
-                    <option value="twitter">🐦 X / Twitter</option>
-                    <option value="instagram">📸 Instagram</option>
-                    <option value="tiktok">🎵 TikTok</option>
-                  </select>
-                </div>
-              </div>
-              <button className="btn btn-primary" onClick={handleRunAiCaptionStudio} disabled={generatingCaptionState}>
-                <Wand2 size={16} /> {generatingCaptionState ? 'Writing Copy...' : 'Generate Copy & Hashtags'}
-              </button>
-
-              {generatedCaptionResult && (
-                <div style={{ marginTop: '24px', background: 'rgba(0,0,0,0.3)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <h4 style={{ color: '#c084fc', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '700' }}>Generated Copy Result:</h4>
-                  <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.88rem', color: '#fff', fontFamily: 'inherit' }}>{generatedCaptionResult.caption}</pre>
-                  <button className="btn btn-cyan btn-sm" style={{ marginTop: '12px' }} onClick={() => { setTitle(captionTopic || 'AI Post'); setCaption(generatedCaptionResult.caption); setCurrentView('calendar'); openModal(); }}>
-                    <Plus size={14} /> Schedule This Copy
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: HASHTAG RESEARCH */}
-          {aiStudioTab === 'hashtags' && (
-            <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Research High Volume & Niche Hashtags</h3>
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-                <input type="text" className="input-control" value={hashtagTopic} onChange={(e) => setHashtagTopic(e.target.value)} placeholder="Topic keyword..." />
-                <button className="btn btn-primary" onClick={handleRunHashtagResearch} disabled={researchingTags}>
-                  <Hash size={16} /> {researchingTags ? 'Researching...' : 'Find Hashtags'}
-                </button>
-              </div>
-
-              {hashtagResults && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginTop: '20px' }}>
-                  <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '16px', borderRadius: '12px' }}>
-                    <h4 style={{ color: '#c084fc', marginBottom: '8px', fontSize: '0.85rem' }}>High Volume Hashtags</h4>
-                    {hashtagResults.highVolume?.map(h => <span key={h.tag} style={{ display: 'inline-block', background: 'rgba(139, 92, 246, 0.2)', padding: '4px 8px', borderRadius: '6px', margin: '4px', fontSize: '0.8rem', color: '#fff' }}>{h.tag}</span>)}
-                  </div>
-
-                  <div style={{ background: 'rgba(6, 182, 212, 0.1)', padding: '16px', borderRadius: '12px' }}>
-                    <h4 style={{ color: '#22d3ee', marginBottom: '8px', fontSize: '0.85rem' }}>Niche Targeted</h4>
-                    {hashtagResults.nicheTargeted?.map(h => <span key={h.tag} style={{ display: 'inline-block', background: 'rgba(6, 182, 212, 0.2)', padding: '4px 8px', borderRadius: '6px', margin: '4px', fontSize: '0.8rem', color: '#fff' }}>{h.tag}</span>)}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 4: ENGAGEMENT PREDICTOR */}
-          {aiStudioTab === 'predict' && (
-            <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Predictive Engagement Score Analyzer</h3>
-              <textarea className="textarea-control" rows={4} value={predictCaption} onChange={(e) => setPredictCaption(e.target.value)} style={{ marginBottom: '16px' }} />
-              <button className="btn btn-primary" onClick={handleRunPrediction}>
-                <TrendingUp size={16} /> Predict Engagement Score
-              </button>
-
-              {predictionResult && (
-                <div style={{ marginTop: '20px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '20px', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#34d399' }}>{predictionResult.score}%</div>
-                    <div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>Grade: {predictionResult.grade}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Estimated Reach: {predictionResult.estimatedReachMultiplier}</div>
-                    </div>
-                  </div>
-                  {predictionResult.analysis?.map((item, idx) => (
-                    <div key={idx} style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: '4px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <CheckCircle2 size={14} color="#34d399" /> {item.text}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+        } />
+      </Routes>
 
       {/* AUTH MODAL */}
       {authModalOpen && (
@@ -1105,9 +1077,7 @@ export default function App() {
                 <Key size={22} color="#06b6d4" />
                 <h2 style={{ fontSize: '1.3rem', fontWeight: '800' }}>Connect Social Media Accounts</h2>
               </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSettingsModalOpen(false)}>
-                <X size={20} />
-              </button>
+              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSettingsModalOpen(false)}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleSaveSocialAccount}>
