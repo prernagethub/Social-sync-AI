@@ -26,7 +26,13 @@ import {
   User,
   Settings,
   Key,
-  CheckCircle2
+  CheckCircle2,
+  LogIn,
+  LogOut,
+  UserCheck,
+  Lock,
+  Mail,
+  Shield
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { generateCaption, generatePostIdeas } from './services/aiEngine';
@@ -64,15 +70,32 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
+  
+  // Modals State
   const [modalOpen, setModalOpen] = useState(false);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [copiedSql, setCopiedSql] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
 
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('socialsync_user');
+    return saved ? JSON.parse(saved) : {
+      name: 'Alex Morgan',
+      email: 'alex@socialsync.ai',
+      role: 'Growth Lead',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'
+    };
+  });
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+
   // User Profile & Social Token State
-  const [userEmail, setUserEmail] = useState('creator@socialsync.ai');
   const [userLinkedinToken, setUserLinkedinToken] = useState('');
   const [tokenSavedStatus, setTokenSavedStatus] = useState(false);
 
@@ -133,6 +156,26 @@ export default function App() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Auth Functions
+  const handleAuthSubmit = (e) => {
+    e.preventDefault();
+    const newUser = {
+      name: authName || authEmail.split('@')[0] || 'Social Creator',
+      email: authEmail || 'creator@socialsync.ai',
+      role: 'Admin',
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${authEmail || 'user'}`
+    };
+    setCurrentUser(newUser);
+    localStorage.setItem('socialsync_user', JSON.stringify(newUser));
+    setAuthModalOpen(false);
+    try { confetti({ particleCount: 60, spread: 50, origin: { y: 0.6 } }); } catch (err) {}
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('socialsync_user');
+  };
 
   const triggerLinkedInPublisherAgent = async () => {
     try {
@@ -310,7 +353,9 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* Top Bar */}
+      {/* ---------------------------------------------------- */}
+      {/* NAVBAR WITH AUTHENTICATION INTEGRATION               */}
+      {/* ---------------------------------------------------- */}
       <nav style={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100, padding: '12px 24px' }}>
         <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           
@@ -323,6 +368,7 @@ export default function App() {
             </span>
           </div>
 
+          {/* Navigation View Tabs */}
           <div style={{ display: 'flex', gap: '8px', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
             <button
               onClick={() => setCurrentView('landing')}
@@ -382,10 +428,37 @@ export default function App() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Right Navbar Controls & Authentication */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button className="btn btn-secondary btn-sm" onClick={() => setSettingsModalOpen(true)}>
-              <Settings size={15} color="#06b6d4" /> Connect My Accounts
+              <Settings size={15} color="#06b6d4" /> Accounts
             </button>
+
+            {currentUser ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(30, 41, 59, 0.7)', padding: '4px 12px 4px 6px', borderRadius: '30px', border: '1px solid var(--border-color)' }}>
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #8b5cf6' }}
+                />
+                <div style={{ fontSize: '0.8rem', lineHeight: 1.2 }}>
+                  <div style={{ fontWeight: '700', color: '#fff' }}>{currentUser.name}</div>
+                  <div style={{ color: '#06b6d4', fontSize: '0.7rem' }}>{currentUser.role}</div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }}
+                  title="Sign Out"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
+            ) : (
+              <button className="btn btn-cyan btn-sm" onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
+                <LogIn size={15} /> Sign In
+              </button>
+            )}
+
             <button className="btn btn-primary btn-sm" onClick={() => { setCurrentView('calendar'); openModal(); }}>
               <Plus size={16} /> New Post
             </button>
@@ -407,15 +480,15 @@ export default function App() {
               </h1>
 
               <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '740px', margin: '0 auto 36px auto' }}>
-                Any user can log in, connect their personal <strong>LinkedIn</strong> & <strong>X (Twitter)</strong> accounts, and let automated background agents publish scheduled content directly to their feeds.
+                Sign in, connect your personal <strong>LinkedIn</strong> & <strong>X (Twitter)</strong> accounts, and let automated background agents publish scheduled content directly to your feeds.
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 <button className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setCurrentView('calendar')}>
                   Launch Content Calendar <ArrowRight size={18} />
                 </button>
-                <button className="btn btn-secondary" style={{ padding: '14px 24px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setSettingsModalOpen(true)}>
-                  <Key size={18} color="#06b6d4" /> Connect My Social Accounts
+                <button className="btn btn-secondary" style={{ padding: '14px 24px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => setAuthModalOpen(true)}>
+                  <LogIn size={18} color="#06b6d4" /> Sign In / Create Account
                 </button>
               </div>
             </div>
@@ -425,11 +498,11 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
               <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #8b5cf6' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                  <User size={26} color="#c084fc" />
+                  <UserCheck size={26} color="#c084fc" />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Multi-User Account Connections</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Navbar Authentication</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                  Every team member links their own personal OAuth access tokens under <strong>"Connect My Accounts"</strong>. Posts automatically route to the logged-in user's social profile.
+                  Log in directly from the top navigation bar. Every team member gets their own workspace and personal social media account credentials.
                 </p>
               </div>
 
@@ -467,7 +540,7 @@ export default function App() {
                   Social Media Content Calendar
                 </h1>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Logged in as: <code style={{ color: '#22d3ee' }}>{userEmail}</code>
+                  Active User: <code style={{ color: '#22d3ee' }}>{currentUser?.email || 'Guest Mode'}</code>
                 </div>
               </div>
 
@@ -638,6 +711,122 @@ export default function App() {
         </div>
       )}
 
+      {/* ---------------------------------------------------- */}
+      {/* AUTHENTICATION MODAL (SIGN IN / SIGN UP)            */}
+      {/* ---------------------------------------------------- */}
+      {authModalOpen && (
+        <div className="modal-overlay" onClick={() => setAuthModalOpen(false)}>
+          <div className="modal-container" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Shield size={22} color="#8b5cf6" />
+                <h2 style={{ fontSize: '1.3rem', fontWeight: '800' }}>
+                  {authMode === 'login' ? 'Sign In to SocialSync' : 'Create Account'}
+                </h2>
+              </div>
+              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setAuthModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Auth Mode Toggle Tabs */}
+            <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', marginBottom: '20px', border: '1px solid var(--border-color)' }}>
+              <button
+                onClick={() => setAuthMode('login')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: '700',
+                  border: 'none',
+                  background: authMode === 'login' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                  color: authMode === 'login' ? '#fff' : 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setAuthMode('signup')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: '700',
+                  border: 'none',
+                  background: authMode === 'signup' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                  color: authMode === 'signup' ? '#fff' : 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                Create Account
+              </button>
+            </div>
+
+            <form onSubmit={handleAuthSubmit}>
+              {authMode === 'signup' && (
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    className="input-control"
+                    placeholder="e.g. Alex Morgan"
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">Email Address *</label>
+                <input
+                  type="email"
+                  className="input-control"
+                  placeholder="alex@company.com"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Password *</label>
+                <input
+                  type="password"
+                  className="input-control"
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }}>
+                <LogIn size={16} /> {authMode === 'login' ? 'Sign In to Dashboard' : 'Create Free Account'}
+              </button>
+            </form>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '20px', paddingTop: '16px', textAlign: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => {
+                  setAuthEmail('demo@socialsync.ai');
+                  setAuthName('Demo Lead');
+                  handleAuthSubmit({ preventDefault: () => {} });
+                }}
+              >
+                ⚡ 1-Click Instant Demo Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MULTI-USER CONNECT SOCIAL ACCOUNTS MODAL */}
       {settingsModalOpen && (
         <div className="modal-overlay" onClick={() => setSettingsModalOpen(false)}>
@@ -662,9 +851,8 @@ export default function App() {
                 <input
                   type="email"
                   className="input-control"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  required
+                  value={currentUser?.email || 'creator@socialsync.ai'}
+                  disabled
                 />
               </div>
 
