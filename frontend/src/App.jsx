@@ -44,10 +44,10 @@ import {
   Users,
   CreditCard,
   Lock,
-  Layers,
-  Cpu,
-  Share2,
-  Award
+  Bell,
+  Image as ImageIcon,
+  UploadCloud,
+  CheckSquare
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -68,34 +68,6 @@ import {
   researchHashtags,
   predictEngagement
 } from './services/aiEngine';
-
-const SQL_SCHEMA_SCRIPT = `-- Multi-User Social Accounts Schema
-create table if not exists content_calendar (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid,
-    title text not null,
-    caption text,
-    platform text not null,
-    scheduled_at timestamptz not null,
-    status text default 'draft',
-    color text,
-    created_at timestamptz default now(),
-    updated_at timestamptz default now()
-);
-
-create table if not exists user_social_accounts (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid,
-    platform text not null,
-    account_name text,
-    access_token text not null,
-    account_urn text,
-    created_at timestamptz default now()
-);
-
-alter table content_calendar disable row level security;
-alter table user_social_accounts disable row level security;
-`;
 
 const getTodayDateString = (dateVal = null) => {
   const d = dateVal ? new Date(dateVal) : new Date(Date.now() + 86400000);
@@ -124,13 +96,12 @@ export default function App() {
   const [error, setError] = useState(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
   
-  // Modals State
+  // Modals & Popovers State
   const [modalOpen, setModalOpen] = useState(false);
-  const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
-  const [copiedSql, setCopiedSql] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
 
   // Authentication State
@@ -145,7 +116,6 @@ export default function App() {
 
   // User Profile & Tokens State
   const [userLinkedinToken, setUserLinkedinToken] = useState('');
-  const [tokenSavedStatus, setTokenSavedStatus] = useState(false);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -155,6 +125,8 @@ export default function App() {
   const [scheduledTime, setScheduledTime] = useState(getTodayTimeString());
   const [status, setStatus] = useState('draft');
   const [color, setColor] = useState('#8b5cf6');
+  const [imageUrl, setImageUrl] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
 
   // AI Studio Suite State
   const [aiStudioTab, setAiStudioTab] = useState('ideas');
@@ -176,6 +148,13 @@ export default function App() {
   // AI Prediction State
   const [predictCaption, setPredictCaption] = useState('5 AI Workflows transforming social media reach in 2026!');
   const [predictionResult, setPredictionResult] = useState(null);
+
+  // Preserve route on refresh
+  useEffect(() => {
+    if (location.pathname !== '/') {
+      localStorage.setItem('socialsync_last_path', location.pathname);
+    }
+  }, [location.pathname]);
 
   const fetchPosts = async (showLoadingSpinner = false) => {
     if (showLoadingSpinner) setLoading(true);
@@ -219,6 +198,53 @@ export default function App() {
     };
   }, []);
 
+  // Notifications calculation
+  const getNotifications = () => {
+    const today = new Date();
+    const scheduledToday = posts.filter(p => p.scheduled_at && isSameDay(new Date(p.scheduled_at), today));
+    const draftPosts = posts.filter(p => p.status === 'draft');
+    const recentPublished = posts.filter(p => p.status === 'published');
+
+    const notifs = [];
+
+    scheduledToday.forEach(p => {
+      notifs.push({
+        id: `sched-${p.id}`,
+        type: 'scheduled',
+        icon: '📅',
+        title: `Post Scheduled Today`,
+        desc: `"${p.title}" is scheduled for today at ${new Date(p.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+        time: 'Today'
+      });
+    });
+
+    if (draftPosts.length > 0) {
+      notifs.push({
+        id: 'draft-alert',
+        type: 'draft',
+        icon: '📝',
+        title: `${draftPosts.length} Draft Posts Pending`,
+        desc: `You have ${draftPosts.length} post ideas in draft mode ready to schedule.`,
+        time: 'Pending'
+      });
+    }
+
+    recentPublished.slice(0, 3).forEach(p => {
+      notifs.push({
+        id: `pub-${p.id}`,
+        type: 'published',
+        icon: '🚀',
+        title: `Post Published`,
+        desc: `"${p.title}" has been published to ${p.platform.toUpperCase()}`,
+        time: 'Recently'
+      });
+    });
+
+    return notifs;
+  };
+
+  const notificationsList = getNotifications();
+
   // Auth Handlers
   const handleAuthSubmit = (e) => {
     e.preventDefault();
@@ -238,6 +264,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('socialsync_user');
+    localStorage.removeItem('socialsync_last_path');
     navigate('/home');
   };
 
@@ -273,10 +300,16 @@ export default function App() {
     }
   };
 
-  const handleSaveSocialAccount = async (e) => {
-    e.preventDefault();
-    setTokenSavedStatus(true);
-    setTimeout(() => setTokenSavedStatus(false), 2500);
+  const handleImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        setImageUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSavePost = async (e) => {
@@ -297,6 +330,7 @@ export default function App() {
       scheduled_at: combinedIsoDate,
       status,
       color: color || '#8b5cf6',
+      image_url: imageUrl || imagePreview || null,
       updated_at: new Date().toISOString()
     };
 
@@ -321,9 +355,6 @@ export default function App() {
       await fetchPosts(false);
       closeModal();
     } catch (err) {
-      if (err.message.includes('row-level security')) {
-        setSqlModalOpen(true);
-      }
       alert(`Supabase Error: ${err.message}`);
     }
   };
@@ -356,6 +387,8 @@ export default function App() {
       setScheduledTime(getTodayTimeString(post.scheduled_at));
       setStatus(post.status || 'draft');
       setColor(post.color || '#8b5cf6');
+      setImageUrl(post.image_url || '');
+      setImagePreview(post.image_url || '');
     } else {
       setEditingPost(null);
       setTitle('');
@@ -365,6 +398,8 @@ export default function App() {
       setScheduledTime(getTodayTimeString());
       setStatus('draft');
       setColor('#8b5cf6');
+      setImageUrl('');
+      setImagePreview('');
     }
     setModalOpen(true);
   };
@@ -528,6 +563,9 @@ export default function App() {
                       {p.status === 'published' ? '🚀' : '📅'}
                     </span>
                   </div>
+                  {p.image_url && (
+                    <img src={p.image_url} alt="thumbnail" style={{ width: '100%', height: '32px', objectFit: 'cover', borderRadius: '4px', marginTop: '2px' }} />
+                  )}
                 </div>
               ))}
             </div>
@@ -729,7 +767,102 @@ export default function App() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+            
+            {/* NOTIFICATION BELL ICON */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setNotificationOpen(!notificationOpen)}
+                style={{
+                  background: 'rgba(30, 41, 59, 0.7)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '50%',
+                  width: '38px',
+                  height: '38px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  position: 'relative'
+                }}
+                title="Notifications"
+              >
+                <Bell size={18} color="#c084fc" />
+                {notificationsList.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    background: '#ef4444',
+                    color: '#fff',
+                    fontSize: '0.65rem',
+                    fontWeight: '900',
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #0f172a'
+                  }}>
+                    {notificationsList.length}
+                  </span>
+                )}
+              </button>
+
+              {/* NOTIFICATION DROPDOWN POPUP */}
+              {notificationOpen && (
+                <div className="glass-panel" style={{
+                  position: 'absolute',
+                  top: '48px',
+                  right: 0,
+                  width: '340px',
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  zIndex: 200,
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                  border: '1px solid var(--border-color)',
+                  background: 'rgba(15, 23, 42, 0.96)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '0.95rem' }}>
+                      <Bell size={16} color="#8b5cf6" /> Notifications ({notificationsList.length})
+                    </div>
+                    <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setNotificationOpen(false)}><X size={16} /></button>
+                  </div>
+
+                  {notificationsList.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      No new notifications right now.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {notificationsList.map((n) => (
+                        <div key={n.id} style={{
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          background: 'rgba(30, 41, 59, 0.6)',
+                          borderLeft: n.type === 'scheduled' ? '3px solid #8b5cf6' : n.type === 'draft' ? '3px solid #f59e0b' : '3px solid #10b981',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#fff' }}>{n.icon} {n.title}</span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{n.time}</span>
+                          </div>
+                          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{n.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {currentUser ? (
               <>
                 <button className="btn btn-secondary btn-sm" onClick={() => setSettingsModalOpen(true)}>
@@ -762,12 +895,13 @@ export default function App() {
 
       {/* ROUTES */}
       <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="/" element={
+          currentUser ? <Navigate to="/calendar" replace /> : <Navigate to="/home" replace />
+        } />
         
-        {/* ROUTE 1: /home (EXPANSIVE OVERVIEW HOME LANDING PAGE WITH EMBEDDED PRICING AT THE END) */}
+        {/* ROUTE 1: /home */}
         <Route path="/home" element={
           <div>
-            {/* HERO BANNER SECTION */}
             <section style={{ padding: '90px 24px 70px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
               <div style={{ maxWidth: '960px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
                 
@@ -804,186 +938,38 @@ export default function App() {
               </div>
             </section>
 
-            {/* FULL PLATFORM CAPABILITIES OVERVIEW SECTION */}
             <section style={{ maxWidth: '1250px', margin: '0 auto', padding: '0 24px 90px 24px' }}>
               <div style={{ textAlign: 'center', marginBottom: '56px' }}>
                 <span className="badge badge-glow" style={{ marginBottom: '12px' }}>ALL-IN-ONE PLATFORM CAPABILITIES</span>
                 <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginTop: '8px' }}>
                   Everything You Need to Scale Social Media Reach
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginTop: '10px' }}>
-                  A complete full stack suite connecting AI copy engines with live database scheduling and publishing loops.
-                </p>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '28px' }}>
-                
-                {/* Capability 1 */}
                 <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #8b5cf6' }}>
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
                     <CalendarIcon size={28} color="#c084fc" />
                   </div>
                   <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>📅 Visual 7x5 Monthly Calendar Grid</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    View your full monthly content schedule at a glance. Every scheduled post is displayed on its exact calendar date box with channel icons and status badges.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Click-to-schedule `+` on any date</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Multi-channel platform filtering</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Month & Cards View modes</li>
-                  </ul>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>View your full monthly content schedule at a glance. Every scheduled post is displayed on its exact calendar date box.</p>
                 </div>
 
-                {/* Capability 2 */}
                 <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #06b6d4' }}>
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(6, 182, 212, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
                     <Bot size={28} color="#22d3ee" />
                   </div>
-                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>⚡ Autonomous CrewAI Background Agent</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Our Python background publishing loop continuously checks Supabase every 20 seconds for due posts and publishes them live to LinkedIn & X feeds automatically.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> 100% Automated Background Execution</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Real-Time Status Update to `🚀 Published`</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Zero Manual Intervention Needed</li>
-                  </ul>
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>⚡ Autonomous CrewAI Agent</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>Python background agent polls Supabase every 20s and posts live content directly to LinkedIn & X feeds.</p>
                 </div>
 
-                {/* Capability 3 */}
                 <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #10b981' }}>
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
                     <Wand2 size={28} color="#34d399" />
                   </div>
-                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🤖 4-in-1 AI Content Generation Studio</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Generate post ideas, viral hooks, platform-tailored copy, hashtag research, and predictive engagement scores powered by Google Gemini LLM.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Niche Post Ideas & Viral Hook Generator</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Predictive Engagement Analyzer (0-100%)</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Hashtag Volume & Competition Finder</li>
-                  </ul>
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🤖 4-in-1 AI Content Studio</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>Generate post ideas, viral copy, hashtag volume research, and engagement predictions.</p>
                 </div>
-
-                {/* Capability 4 */}
-                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #f59e0b' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
-                    <Shield size={28} color="#fbbf24" />
-                  </div>
-                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🔒 Auth Protection & Multi-User Accounts</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Protected user access control ensures unauthenticated visitors cannot view or edit your social media plans without logging in.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> 1-Click Instant Demo Sign In</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Personal LinkedIn OAuth Token Connection</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Persistent User Session Storage</li>
-                  </ul>
-                </div>
-
-              </div>
-            </section>
-
-            {/* HOW IT WORKS SECTION */}
-            <section style={{ maxWidth: '1100px', margin: '0 auto 90px auto', padding: '0 24px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>3 SIMPLE STEPS</span>
-                <h2 style={{ fontSize: '2.2rem', fontWeight: '800', marginTop: '6px' }}>
-                  How SocialSync AI Works
-                </h2>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-                <div className="glass-panel" style={{ padding: '28px', borderRadius: '18px', textAlign: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#8b5cf6', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', fontSize: '1.2rem' }}>1</div>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Sign In & Connect Accounts</h4>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Log in to your workspace and paste your personal LinkedIn OAuth access token under Accounts.</p>
-                </div>
-
-                <div className="glass-panel" style={{ padding: '28px', borderRadius: '18px', textAlign: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#06b6d4', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', fontSize: '1.2rem' }}>2</div>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Generate & Schedule Posts</h4>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Use Gemini AI to write captions & pick a target date/time on the 7x5 Monthly Visual Grid.</p>
-                </div>
-
-                <div className="glass-panel" style={{ padding: '28px', borderRadius: '18px', textAlign: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#10b981', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', fontSize: '1.2rem' }}>3</div>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Auto-Publish Live</h4>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>When the scheduled time arrives, the background CrewAI agent posts live to your feed!</p>
-                </div>
-              </div>
-            </section>
-
-            {/* PRICING SECTION AT THE END OF HOME PAGE */}
-            <section id="home-pricing-section" style={{ maxWidth: '1150px', margin: '0 auto 90px auto', padding: '0 24px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '44px' }}>
-                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>SIMPLE TRANSPARENT PRICING</span>
-                <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginTop: '6px' }}>
-                  Choose the Perfect Plan for Your Team
-                </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginTop: '8px' }}>
-                  Scale your social reach without blowing your marketing budget.
-                </p>
-
-                <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(15, 22, 35, 0.9)', padding: '4px', borderRadius: '30px', border: '1px solid var(--border-color)', marginTop: '24px' }}>
-                  <button
-                    style={{ padding: '8px 20px', borderRadius: '25px', border: 'none', background: billingCycle === 'monthly' ? 'var(--primary)' : 'transparent', color: '#fff', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
-                    onClick={() => setBillingCycle('monthly')}
-                  >
-                    Monthly Billing
-                  </button>
-                  <button
-                    style={{ padding: '8px 20px', borderRadius: '25px', border: 'none', background: billingCycle === 'yearly' ? 'var(--primary)' : 'transparent', color: '#fff', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
-                    onClick={() => setBillingCycle('yearly')}
-                  >
-                    Yearly (Save 20%)
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '28px' }}>
-                {pricingPlans.map((p, i) => (
-                  <div key={i} className="glass-panel" style={{
-                    padding: '36px',
-                    borderRadius: '24px',
-                    position: 'relative',
-                    border: p.badge === 'MOST POPULAR' ? '2px solid #8b5cf6' : '1px solid var(--border-color)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between'
-                  }}>
-                    {p.badge && (
-                      <div className="badge badge-glow" style={{ position: 'absolute', top: '-14px', right: '24px', background: '#8b5cf6', color: '#fff' }}>
-                        {p.badge}
-                      </div>
-                    )}
-                    <div>
-                      <h3 style={{ fontSize: '1.35rem', fontWeight: '700', marginBottom: '6px' }}>{p.name}</h3>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>{p.desc}</p>
-                      
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '24px' }}>
-                        <span style={{ fontSize: '3rem', fontWeight: '900' }}>
-                          {billingCycle === 'monthly' ? p.priceMonthly : p.priceYearly}
-                        </span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/ month</span>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
-                        {p.features.map((feat, idx) => (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
-                            <Check size={16} color="#10b981" />
-                            <span>{feat}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button className={`btn ${p.btnClass}`} style={{ width: '100%', justifyContent: 'center' }} onClick={() => { if (requireAuth()) navigate('/calendar'); }}>
-                      Start 14-Day Free Trial <ArrowRight size={16} />
-                    </button>
-                  </div>
-                ))}
               </div>
             </section>
           </div>
@@ -1126,6 +1112,13 @@ export default function App() {
                           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {p.caption || 'No caption text.'}
                           </p>
+
+                          {/* IMAGE PHOTO PREVIEW ON POST CARD */}
+                          {p.image_url && (
+                            <div style={{ marginTop: '10px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                              <img src={p.image_url} alt={p.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                            </div>
+                          )}
                         </div>
 
                         <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1452,8 +1445,8 @@ export default function App() {
                 className="btn btn-secondary btn-sm"
                 style={{ width: '100%', justifyContent: 'center' }}
                 onClick={() => {
-                  setAuthEmail('alex@socialsync.ai');
-                  setAuthName('Alex Morgan');
+                  setAuthEmail('rajputprerna03@gmail.com');
+                  setAuthName('Prerna Rajput');
                   handleAuthSubmit({ preventDefault: () => {} });
                 }}
               >
@@ -1476,7 +1469,7 @@ export default function App() {
               <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSettingsModalOpen(false)}><X size={20} /></button>
             </div>
 
-            <form onSubmit={handleSaveSocialAccount}>
+            <form onSubmit={(e) => { e.preventDefault(); setSettingsModalOpen(false); }}>
               <div className="form-group">
                 <label className="form-label">LinkedIn OAuth Access Token</label>
                 <textarea className="textarea-control" rows={3} value={userLinkedinToken} onChange={(e) => setUserLinkedinToken(e.target.value)} placeholder="Paste personal LinkedIn token..." />
@@ -1490,7 +1483,7 @@ export default function App() {
         </div>
       )}
 
-      {/* SCHEDULE MODAL */}
+      {/* SCHEDULE POST MODAL (WITH PHOTO / IMAGE UPLOAD & PREVIEW) */}
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-container" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
@@ -1537,12 +1530,50 @@ export default function App() {
 
               <div className="form-group" style={{ marginTop: '14px' }}>
                 <label className="form-label">Caption Copy</label>
-                <textarea className="textarea-control" rows={5} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write caption..." />
+                <textarea className="textarea-control" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write caption..." />
+              </div>
+
+              {/* PHOTO / IMAGE UPLOAD & LINK INPUT */}
+              <div className="form-group" style={{ marginTop: '14px' }}>
+                <label className="form-label">Attach Photo / Media Image</label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>OR</span>
+                  <input
+                    type="url"
+                    className="input-control"
+                    placeholder="Paste image URL..."
+                    value={imageUrl}
+                    onChange={(e) => {
+                      setImageUrl(e.target.value);
+                      setImagePreview(e.target.value);
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+
+                {imagePreview && (
+                  <div style={{ marginTop: '10px', position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)', maxHeight: '160px' }}>
+                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                    <button
+                      type="button"
+                      style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      onClick={() => { setImageUrl(''); setImagePreview(''); }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary"><Check size={18} /> {editingPost ? 'Update Post' : 'Schedule & Trigger Agent'}</button>
+                <button type="submit" className="btn btn-primary"><Check size={18} /> {editingPost ? 'Update Post' : 'Schedule & Save Post'}</button>
               </div>
             </form>
           </div>
