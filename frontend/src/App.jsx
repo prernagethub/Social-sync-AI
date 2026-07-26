@@ -125,7 +125,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
-  
+
   // Modals & Popovers State
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -233,7 +233,7 @@ export default function App() {
     };
     setCurrentUser(updated);
     localStorage.setItem('socialsync_user', JSON.stringify(updated));
-    try { confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } }); } catch (err) {}
+    try { confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } }); } catch (err) { }
     toast.success('Profile updated successfully! ✨', { autoClose: 2000 });
   };
 
@@ -252,7 +252,7 @@ export default function App() {
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    try { confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } }); } catch (err) {}
+    try { confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } }); } catch (err) { }
   };
 
   // User Profile & Tokens State
@@ -274,7 +274,7 @@ export default function App() {
   const [aiNiche, setAiNiche] = useState('Tech & AI Startup');
   const [aiIdeas, setAiIdeas] = useState([]);
   const [generatingIdeas, setGeneratingIdeas] = useState(false);
-  
+
   // AI Caption State
   const [captionTopic, setCaptionTopic] = useState('');
   const [captionPlatform, setCaptionPlatform] = useState('linkedin');
@@ -454,7 +454,7 @@ export default function App() {
     setAuthModalOpen(false);
     toast.success(`Welcome back, ${newUser.name}! 👋`, { autoClose: 2000 });
     navigate('/calendar');
-    try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }); } catch (err) {}
+    try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }); } catch (err) { }
   };
 
   const handleLogout = () => {
@@ -490,7 +490,7 @@ export default function App() {
     setPublishingId(postId);
     try {
       await triggerLinkedInPublisherAgent();
-      try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
+      try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch (err) { }
       toast.success('Live LinkedIn Agent post published! 🚀', { autoClose: 2000 });
       await fetchPosts(false);
     } catch (err) {
@@ -525,7 +525,7 @@ export default function App() {
     if (!title.trim()) return;
 
     if (status === 'published') {
-      try { confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } }); } catch (err) {}
+      try { confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } }); } catch (err) { }
     }
 
     const combinedIsoDate = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
@@ -936,7 +936,7 @@ export default function App() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              
+
               <button className="btn btn-secondary btn-sm" onClick={() => setShareModalOpen(true)}>
                 <Share2 size={14} color="#06b6d4" /> Share Client Link
               </button>
@@ -1127,7 +1127,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-      
+
       {/* GLOBAL TOASTIFY NOTIFICATION CONTAINER (2 SECOND AUTO-CLOSE, BOTTOM-RIGHT SMOOTH SLIDE) */}
       <ToastContainer
         position="bottom-right"
@@ -1147,7 +1147,7 @@ export default function App() {
         {/* NAVBAR */}
         <nav style={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100, padding: '12px 24px' }}>
           <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-            
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/home')}>
               <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary-glow)' }}>
                 <Rocket size={22} color="#fff" />
@@ -1406,13 +1406,13 @@ export default function App() {
           <Route path="/" element={
             currentUser ? <Navigate to="/calendar" replace /> : <Navigate to="/home" replace />
           } />
-          
+
           {/* ROUTE 1: /home */}
           <Route path="/home" element={
             <div>
               <section style={{ padding: '95px 24px 75px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ maxWidth: '980px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-                  
+
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 22px', borderRadius: '30px', background: 'rgba(139, 92, 246, 0.18)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc', fontSize: '0.88rem', fontWeight: '700', marginBottom: '28px' }}>
                     <Sparkles size={16} /> Next-Gen Autonomous AI Social Media & CrewAI Agent Platform
                   </div>
@@ -1435,7 +1435,7 @@ export default function App() {
                         <LogIn size={20} /> Sign In to Access Calendar <ArrowRight size={20} />
                       </button>
                     )}
-                    
+
                     <button className="btn btn-secondary" style={{ padding: '16px 28px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => {
                       const pricingElem = document.getElementById('home-pricing-section');
                       if (pricingElem) pricingElem.scrollIntoView({ behavior: 'smooth' });
@@ -1479,7 +1479,7 @@ export default function App() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-                  
+
                   {/* Step 1 */}
                   <div className="glass-panel" style={{ padding: '28px 36px', borderRadius: '20px', borderLeft: '6px solid #8b5cf6', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
                     <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(139, 92, 246, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: '900', color: '#c084fc', flexShrink: 0 }}>
@@ -1659,7 +1659,7 @@ export default function App() {
                       <div>
                         <h3 style={{ fontSize: '1.35rem', fontWeight: '700', marginBottom: '6px' }}>{p.name}</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>{p.desc}</p>
-                        
+
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '24px' }}>
                           <span style={{ fontSize: '3rem', fontWeight: '900' }}>
                             {billingCycle === 'monthly' ? p.priceMonthly : p.priceYearly}
@@ -1754,7 +1754,7 @@ export default function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px', marginBottom: '32px' }}>
                   <div className="glass-panel" style={{ padding: '28px', borderRadius: '20px' }}>
                     <h3 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '20px', color: '#fff' }}>💼 Dynamic Platform Share</h3>
-                    
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px' }}>
@@ -2054,7 +2054,7 @@ export default function App() {
                     <div>
                       <h3 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '6px' }}>{p.name}</h3>
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>{p.desc}</p>
-                      
+
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '24px' }}>
                         <span style={{ fontSize: '2.8rem', fontWeight: '800' }}>
                           {billingCycle === 'monthly' ? p.priceMonthly : p.priceYearly}
@@ -2087,7 +2087,7 @@ export default function App() {
       <footer style={{ background: 'rgba(11, 15, 25, 0.95)', borderTop: '1px solid var(--border-color)', padding: '50px 24px 30px 24px', marginTop: '60px' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '40px', marginBottom: '40px' }}>
-            
+
             {/* Column 1: Brand Info */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
