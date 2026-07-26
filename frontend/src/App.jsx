@@ -764,7 +764,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         
-        {/* ROUTE 1: /home (GRAND OVERVIEW HOME LANDING PAGE) */}
+        {/* ROUTE 1: /home (EXPANSIVE OVERVIEW HOME LANDING PAGE WITH EMBEDDED PRICING AT THE END) */}
         <Route path="/home" element={
           <div>
             {/* HERO BANNER SECTION */}
@@ -794,7 +794,10 @@ export default function App() {
                     </button>
                   )}
                   
-                  <button className="btn btn-secondary" style={{ padding: '16px 28px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => navigate('/pricing')}>
+                  <button className="btn btn-secondary" style={{ padding: '16px 28px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => {
+                    const pricingElem = document.getElementById('home-pricing-section');
+                    if (pricingElem) pricingElem.scrollIntoView({ behavior: 'smooth' });
+                  }}>
                     View Pricing Plans <CreditCard size={20} color="#06b6d4" />
                   </button>
                 </div>
@@ -909,6 +912,78 @@ export default function App() {
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Auto-Publish Live</h4>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>When the scheduled time arrives, the background CrewAI agent posts live to your feed!</p>
                 </div>
+              </div>
+            </section>
+
+            {/* PRICING SECTION AT THE END OF HOME PAGE */}
+            <section id="home-pricing-section" style={{ maxWidth: '1150px', margin: '0 auto 90px auto', padding: '0 24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>SIMPLE TRANSPARENT PRICING</span>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginTop: '6px' }}>
+                  Choose the Perfect Plan for Your Team
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginTop: '8px' }}>
+                  Scale your social reach without blowing your marketing budget.
+                </p>
+
+                <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(15, 22, 35, 0.9)', padding: '4px', borderRadius: '30px', border: '1px solid var(--border-color)', marginTop: '24px' }}>
+                  <button
+                    style={{ padding: '8px 20px', borderRadius: '25px', border: 'none', background: billingCycle === 'monthly' ? 'var(--primary)' : 'transparent', color: '#fff', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
+                    onClick={() => setBillingCycle('monthly')}
+                  >
+                    Monthly Billing
+                  </button>
+                  <button
+                    style={{ padding: '8px 20px', borderRadius: '25px', border: 'none', background: billingCycle === 'yearly' ? 'var(--primary)' : 'transparent', color: '#fff', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
+                    onClick={() => setBillingCycle('yearly')}
+                  >
+                    Yearly (Save 20%)
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '28px' }}>
+                {pricingPlans.map((p, i) => (
+                  <div key={i} className="glass-panel" style={{
+                    padding: '36px',
+                    borderRadius: '24px',
+                    position: 'relative',
+                    border: p.badge === 'MOST POPULAR' ? '2px solid #8b5cf6' : '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
+                  }}>
+                    {p.badge && (
+                      <div className="badge badge-glow" style={{ position: 'absolute', top: '-14px', right: '24px', background: '#8b5cf6', color: '#fff' }}>
+                        {p.badge}
+                      </div>
+                    )}
+                    <div>
+                      <h3 style={{ fontSize: '1.35rem', fontWeight: '700', marginBottom: '6px' }}>{p.name}</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>{p.desc}</p>
+                      
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '24px' }}>
+                        <span style={{ fontSize: '3rem', fontWeight: '900' }}>
+                          {billingCycle === 'monthly' ? p.priceMonthly : p.priceYearly}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/ month</span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
+                        {p.features.map((feat, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
+                            <Check size={16} color="#10b981" />
+                            <span>{feat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button className={`btn ${p.btnClass}`} style={{ width: '100%', justifyContent: 'center' }} onClick={() => { if (requireAuth()) navigate('/calendar'); }}>
+                      Start 14-Day Free Trial <ArrowRight size={16} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
