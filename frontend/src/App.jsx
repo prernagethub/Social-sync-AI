@@ -53,7 +53,10 @@ import {
   Layers,
   Cpu,
   Share2,
-  Award
+  Award,
+  Milestone,
+  Compass,
+  ArrowDown
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -1011,6 +1014,118 @@ export default function App() {
                   <div>
                     <div style={{ fontSize: '2.2rem', fontWeight: '900', color: '#fbbf24' }}>5</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Social Networks Supported</div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            {/* VISUAL PROCESS ROADMAP (LOGIN TO SCHEDULING & PUBLISHING JOURNEY) */}
+            <section style={{ maxWidth: '1280px', margin: '0 auto 90px auto', padding: '0 24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '52px' }}>
+                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>STEP-BY-STEP EXECUTION ROADMAP</span>
+                <h2 style={{ fontSize: '2.6rem', fontWeight: '800', marginTop: '8px' }}>
+                  End-to-End Workflow Roadmap: From Login to Auto-Publishing
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginTop: '8px' }}>
+                  Follow this 5-step journey to automate your entire social media strategy seamlessly.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+                
+                {/* Step 1 */}
+                <div className="glass-panel" style={{ padding: '28px 36px', borderRadius: '20px', borderLeft: '6px solid #8b5cf6', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(139, 92, 246, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: '900', color: '#c084fc', flexShrink: 0 }}>
+                    01
+                  </div>
+                  <div style={{ flex: 1, minWidth: '260px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <LogIn size={18} color="#c084fc" />
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#fff' }}>Step 1: Authenticate & Login to Workspace</h3>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+                      Click <strong>"Sign In"</strong> or <strong>"1-Click Instant Demo Login"</strong> to authenticate. Your session is protected and persisted automatically across page refreshes.
+                    </p>
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
+                    Sign In Now <ArrowRight size={14} />
+                  </button>
+                </div>
+
+                {/* Step 2 */}
+                <div className="glass-panel" style={{ padding: '28px 36px', borderRadius: '20px', borderLeft: '6px solid #06b6d4', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(6, 182, 212, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: '900', color: '#22d3ee', flexShrink: 0 }}>
+                    02
+                  </div>
+                  <div style={{ flex: 1, minWidth: '260px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <Key size={18} color="#06b6d4" />
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#fff' }}>Step 2: Connect Social Accounts & OAuth Tokens</h3>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+                      Open <strong>Accounts</strong> in the navbar and input your LinkedIn OAuth token to grant automated posting authorization to your channels.
+                    </p>
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={() => requireAuth(() => setSettingsModalOpen(true))}>
+                    Connect Tokens <Settings size={14} />
+                  </button>
+                </div>
+
+                {/* Step 3 */}
+                <div className="glass-panel" style={{ padding: '28px 36px', borderRadius: '20px', borderLeft: '6px solid #10b981', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: '900', color: '#34d399', flexShrink: 0 }}>
+                    03
+                  </div>
+                  <div style={{ flex: 1, minWidth: '260px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <Wand2 size={18} color="#10b981" />
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#fff' }}>Step 3: Generate Topic Copy in AI Studio</h3>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+                      Navigate to <strong>AI Studio</strong>, type any topic (e.g. <i>Gen-Z on protest</i>, <i>AI SaaS</i>), and let Google Gemini generate viral hooks, platform copy & hashtags.
+                    </p>
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={() => requireAuth(() => navigate('/ai-studio'))}>
+                    Open AI Studio <Sparkles size={14} />
+                  </button>
+                </div>
+
+                {/* Step 4 */}
+                <div className="glass-panel" style={{ padding: '28px 36px', borderRadius: '20px', borderLeft: '6px solid #f59e0b', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(245, 158, 11, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24', flexShrink: 0 }}>
+                    04
+                  </div>
+                  <div style={{ flex: 1, minWidth: '260px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <CalendarIcon size={18} color="#f59e0b" />
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#fff' }}>Step 4: Pick Date on 7x5 Visual Calendar & Attach Media</h3>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+                      Select your publishing date on the 7x5 month grid, attach a photo image asset, choose channel target (LinkedIn/Twitter), and set status to <strong>📅 Scheduled</strong>.
+                    </p>
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={() => requireAuth(() => navigate('/calendar'))}>
+                    View Calendar <CalendarIcon size={14} />
+                  </button>
+                </div>
+
+                {/* Step 5 */}
+                <div className="glass-panel" style={{ padding: '28px 36px', borderRadius: '20px', borderLeft: '6px solid #ec4899', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(236, 72, 153, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: '900', color: '#f472b6', flexShrink: 0 }}>
+                    05
+                  </div>
+                  <div style={{ flex: 1, minWidth: '260px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <Bot size={18} color="#ec4899" />
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#fff' }}>Step 5: Autonomous CrewAI Agent Auto-Publishes Live</h3>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+                      When the scheduled time arrives, our Python background agent loop detects your post in Supabase, posts it live to your feed, and updates status to <strong>🚀 Published</strong>!
+                    </p>
+                  </div>
+                  <div className="badge status-published" style={{ fontSize: '0.85rem' }}>
+                    🚀 Hands-Free Automation
                   </div>
                 </div>
 
