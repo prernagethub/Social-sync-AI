@@ -60,7 +60,8 @@ import {
   Github,
   Twitter,
   Linkedin,
-  Heart
+  Heart,
+  FolderOpen
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -1355,74 +1356,98 @@ export default function App() {
                   {calendarDisplayMode === 'month' ? (
                     renderMonthGrid()
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-                      {filteredPosts.map(p => (
-                        <div
-                          key={p.id}
-                          className="glass-panel glass-panel-hover"
-                          style={{
-                            padding: '20px',
-                            borderRadius: '16px',
-                            position: 'relative',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            gap: '14px',
-                            borderLeft: `5px solid ${p.color || '#8b5cf6'}`
-                          }}
-                        >
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '1.2rem' }}>{getPlatformIcon(p.platform)}</span>
-                                <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{p.platform}</span>
-                              </div>
-                              {getStatusBadge(p.status)}
-                            </div>
-
-                            <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', marginBottom: '6px', lineHeight: 1.3 }}>{p.title}</h3>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                              {p.caption || 'No caption text.'}
-                            </p>
-
-                            {/* IMAGE PHOTO PREVIEW ON POST CARD */}
-                            {p.image_url && (
-                              <div style={{ marginTop: '10px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                                <img src={p.image_url} alt={p.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
-                              </div>
-                            )}
+                    <div>
+                      {filteredPosts.length === 0 ? (
+                        <div className="glass-panel" style={{ textAlign: 'center', padding: '60px 24px', borderRadius: '20px' }}>
+                          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                            <FolderOpen size={32} color="#c084fc" />
                           </div>
-
-                          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                                <Clock size={14} color="#06b6d4" />
-                                <span>{new Date(p.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                              </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)}>
-                                  <Edit3 size={14} /> Edit
-                                </button>
-                                <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)}>
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-
-                            {p.platform === 'linkedin' && p.status !== 'published' && (
-                              <button
-                                className="btn btn-cyan btn-sm"
-                                style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}
-                                onClick={() => handlePublishLinkedInNow(p.id)}
-                                disabled={publishingId === p.id}
-                              >
-                                <Send size={14} /> {publishingId === p.id ? 'Publishing Agent Running...' : '🚀 Publish Live to LinkedIn Agent'}
-                              </button>
-                            )}
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '8px', color: '#fff' }}>
+                            No Posts Available {filterPlatform !== 'all' ? `for ${filterPlatform.toUpperCase()}` : ''} 📭
+                          </h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '480px', margin: '0 auto 24px auto', lineHeight: 1.6 }}>
+                            You haven't scheduled any posts for this platform yet. Click below to create your first post or generate viral copy in AI Studio!
+                          </p>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                            <button className="btn btn-primary" onClick={() => openModal()}>
+                              <Plus size={18} /> Schedule New Post
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => navigate('/ai-studio')}>
+                              <Sparkles size={18} color="#c084fc" /> Generate Copy in AI Studio
+                            </button>
                           </div>
                         </div>
-                      ))}
+                      ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                          {filteredPosts.map(p => (
+                            <div
+                              key={p.id}
+                              className="glass-panel glass-panel-hover"
+                              style={{
+                                padding: '20px',
+                                borderRadius: '16px',
+                                position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                gap: '14px',
+                                borderLeft: `5px solid ${p.color || '#8b5cf6'}`
+                              }}
+                            >
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '1.2rem' }}>{getPlatformIcon(p.platform)}</span>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{p.platform}</span>
+                                  </div>
+                                  {getStatusBadge(p.status)}
+                                </div>
+
+                                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', marginBottom: '6px', lineHeight: 1.3 }}>{p.title}</h3>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {p.caption || 'No caption text.'}
+                                </p>
+
+                                {/* IMAGE PHOTO PREVIEW ON POST CARD */}
+                                {p.image_url && (
+                                  <div style={{ marginTop: '10px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                    <img src={p.image_url} alt={p.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                                    <Clock size={14} color="#06b6d4" />
+                                    <span>{new Date(p.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                  </div>
+
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)}>
+                                      <Edit3 size={14} /> Edit
+                                    </button>
+                                    <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)}>
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {p.platform === 'linkedin' && p.status !== 'published' && (
+                                  <button
+                                    className="btn btn-cyan btn-sm"
+                                    style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}
+                                    onClick={() => handlePublishLinkedInNow(p.id)}
+                                    disabled={publishingId === p.id}
+                                  >
+                                    <Send size={14} /> {publishingId === p.id ? 'Publishing Agent Running...' : '🚀 Publish Live to LinkedIn Agent'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
