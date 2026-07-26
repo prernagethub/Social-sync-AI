@@ -34,7 +34,13 @@ import {
   LayoutGrid,
   List,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  Hash,
+  FileText,
+  BarChart3,
+  Zap,
+  Users
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -49,9 +55,27 @@ import {
   isSameDay,
   addDays
 } from 'date-fns';
-import { generateCaption, generatePostIdeas } from './services/aiEngine';
+import {
+  generateCaption,
+  generatePostIdeas,
+  researchHashtags,
+  predictEngagement
+} from './services/aiEngine';
 
 const SQL_SCHEMA_SCRIPT = `-- Multi-User Social Accounts Schema
+create table if not exists content_calendar (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid,
+    title text not null,
+    caption text,
+    platform text not null,
+    scheduled_at timestamptz not null,
+    status text default 'draft',
+    color text,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
 create table if not exists user_social_accounts (
     id uuid primary key default gen_random_uuid(),
     user_id uuid,
@@ -61,6 +85,8 @@ create table if not exists user_social_accounts (
     account_urn text,
     created_at timestamptz default now()
 );
+
+alter table content_calendar disable row level security;
 alter table user_social_accounts disable row level security;
 `;
 
@@ -125,10 +151,28 @@ export default function App() {
   const [status, setStatus] = useState('draft');
   const [color, setColor] = useState('#8b5cf6');
 
-  // AI Studio State
+  // AI Studio Suite State
+  const [aiStudioTab, setAiStudioTab] = useState('ideas'); // 'ideas' | 'caption' | 'hashtags' | 'predict'
   const [aiNiche, setAiNiche] = useState('Tech & AI Startup');
   const [aiIdeas, setAiIdeas] = useState([]);
   const [generatingIdeas, setGeneratingIdeas] = useState(false);
+  
+  // AI Caption State
+  const [captionTopic, setCaptionTopic] = useState('');
+  const [captionPlatform, setCaptionPlatform] = useState('linkedin');
+  const [generatedCaptionResult, setGeneratedCaptionResult] = useState(null);
+  const [generatingCaptionState, setGeneratingCaptionState] = useState(false);
+
+  // AI Hashtag State
+  const [hashtagTopic, setHashtagTopic] = useState('Marketing Automation');
+  const [hashtagResults, setHashtagResults] = useState(null);
+  const [researchingTags, setResearchingTags] = useState(false);
+
+  // AI Prediction State
+  const [predictCaption, setPredictCaption] = useState('5 AI Workflows transforming social media reach in 2026!');
+  const [predictionResult, setPredictionResult] = useState(null);
+
+  // AI Assistant In Modal
   const [aiTopic, setAiTopic] = useState('');
   const [generatingAi, setGeneratingAi] = useState(false);
 
@@ -319,7 +363,8 @@ export default function App() {
     setEditingPost(null);
   };
 
-  const handleGenerateAiCaption = async () => {
+  // AI Assistant Generator Helper
+  const handleGenerateAiCaptionInModal = async () => {
     if (!aiTopic.trim() && !title.trim()) {
       alert('Please enter a post title or topic first.');
       return;
@@ -333,6 +378,7 @@ export default function App() {
     }
   };
 
+  // AI Studio Handlers
   const handleGenerateIdeas = async () => {
     setGeneratingIdeas(true);
     try {
@@ -341,6 +387,31 @@ export default function App() {
     } finally {
       setGeneratingIdeas(false);
     }
+  };
+
+  const handleRunAiCaptionStudio = async () => {
+    setGeneratingCaptionState(true);
+    try {
+      const res = await generateCaption({ topic: captionTopic || 'Modern AI Automation', platform: captionPlatform });
+      setGeneratedCaptionResult(res);
+    } finally {
+      setGeneratingCaptionState(false);
+    }
+  };
+
+  const handleRunHashtagResearch = async () => {
+    setResearchingTags(true);
+    try {
+      const res = await researchHashtags(hashtagTopic);
+      setHashtagResults(res);
+    } finally {
+      setResearchingTags(false);
+    }
+  };
+
+  const handleRunPrediction = () => {
+    const res = predictEngagement({ caption: predictCaption, platform: 'linkedin' });
+    setPredictionResult(res);
   };
 
   const filteredPosts = posts.filter(p => filterPlatform === 'all' || p.platform === filterPlatform);
@@ -367,7 +438,7 @@ export default function App() {
     }
   };
 
-  // Calendar Month Grid Generator Logic
+  // Month Grid View
   const renderMonthGrid = () => {
     const monthStart = startOfMonth(currentMonthDate);
     const monthEnd = endOfMonth(monthStart);
@@ -512,7 +583,7 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* GLOBAL NAVBAR */}
+      {/* NAVBAR */}
       <nav style={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100, padding: '12px 24px' }}>
         <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           
@@ -580,7 +651,7 @@ export default function App() {
                 gap: '6px'
               }}
             >
-              <Sparkles size={15} /> AI Studio
+              <Sparkles size={15} /> AI Studio Suite
             </button>
           </div>
 
@@ -613,7 +684,7 @@ export default function App() {
         </div>
       </nav>
 
-      {/* VIEW 1: LANDING */}
+      {/* VIEW 1: LANDING PAGE */}
       {currentView === 'landing' && (
         <div>
           <section style={{ padding: '80px 24px 60px 24px', textAlign: 'center' }}>
@@ -658,7 +729,6 @@ export default function App() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {/* View Mode Switcher */}
                 <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                   <button
                     onClick={() => setCalendarDisplayMode('month')}
@@ -705,7 +775,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Filter Controls */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 22, 35, 0.8)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Filter size={16} color="var(--text-muted)" />
@@ -808,57 +877,184 @@ export default function App() {
         </div>
       )}
 
-      {/* VIEW 3: AI STUDIO */}
+      {/* VIEW 3: FULL 4-IN-1 AI STUDIO SUITE */}
       {currentView === 'ai_studio' && (
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
-          <div style={{ marginBottom: '32px' }}>
+          <div style={{ marginBottom: '28px' }}>
             <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              🤖 AI Content Generation Studio
+              🤖 AI Content Generation & Analytics Studio
             </h1>
-            <p style={{ color: 'var(--text-muted)' }}>Generate post ideas, viral hooks, and copy using Google Gemini LLM engine.</p>
+            <p style={{ color: 'var(--text-muted)' }}>Generate post ideas, viral captions, hashtag research, and predictive engagement scores powered by Gemini LLM.</p>
           </div>
 
-          <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1, minWidth: '240px' }}>
-                <label className="form-label">Industry Niche / Topic</label>
-                <input type="text" className="input-control" value={aiNiche} onChange={(e) => setAiNiche(e.target.value)} placeholder="e.g. AI Automation, SaaS, Marketing" />
-              </div>
-              <button className="btn btn-primary" onClick={handleGenerateIdeas} disabled={generatingIdeas}>
-                <Wand2 size={18} /> {generatingIdeas ? 'Generating Ideas...' : 'Generate Post Ideas'}
-              </button>
-            </div>
+          {/* AI Studio Sub-Tool Tabs */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '28px', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <button
+              onClick={() => setAiStudioTab('ideas')}
+              className={`btn ${aiStudioTab === 'ideas' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ fontSize: '0.85rem' }}
+            >
+              💡 Post Ideas Generator
+            </button>
+            <button
+              onClick={() => setAiStudioTab('caption')}
+              className={`btn ${aiStudioTab === 'caption' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ fontSize: '0.85rem' }}
+            >
+              ✍️ AI Caption Writer
+            </button>
+            <button
+              onClick={() => setAiStudioTab('hashtags')}
+              className={`btn ${aiStudioTab === 'hashtags' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ fontSize: '0.85rem' }}
+            >
+              🏷️ Hashtag Research
+            </button>
+            <button
+              onClick={() => setAiStudioTab('predict')}
+              className={`btn ${aiStudioTab === 'predict' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ fontSize: '0.85rem' }}
+            >
+              📊 Predictive Engagement Score
+            </button>
           </div>
 
-          {aiIdeas.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-              {aiIdeas.map((idea, idx) => (
-                <div key={idx} className="glass-panel" style={{ padding: '20px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <span className="badge status-idea" style={{ marginBottom: '10px', display: 'inline-block' }}>Idea #{idx + 1}</span>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>{idea.title || idea}</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{idea.angle || idea.hook || 'High engagement content angle for social media.'}</p>
+          {/* TAB 1: IDEAS GENERATOR */}
+          {aiStudioTab === 'ideas' && (
+            <div>
+              <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px', marginBottom: '32px' }}>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1, minWidth: '240px' }}>
+                    <label className="form-label">Industry Niche / Topic</label>
+                    <input type="text" className="input-control" value={aiNiche} onChange={(e) => setAiNiche(e.target.value)} placeholder="e.g. AI Automation, SaaS, Marketing" />
                   </div>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}
-                    onClick={() => {
-                      setTitle(idea.title || idea);
-                      setCaption(idea.angle || idea.hook || '');
-                      setCurrentView('calendar');
-                      openModal();
-                    }}
-                  >
-                    <Plus size={14} /> Schedule this Idea
+                  <button className="btn btn-primary" onClick={handleGenerateIdeas} disabled={generatingIdeas}>
+                    <Wand2 size={18} /> {generatingIdeas ? 'Generating Ideas...' : 'Generate Post Ideas'}
                   </button>
                 </div>
-              ))}
+              </div>
+
+              {aiIdeas.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  {aiIdeas.map((idea, idx) => (
+                    <div key={idx} className="glass-panel" style={{ padding: '20px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <span className="badge status-idea" style={{ marginBottom: '10px', display: 'inline-block' }}>Idea #{idx + 1}</span>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>{idea.title || idea}</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{idea.angle || idea.hook || 'High engagement content angle for social media.'}</p>
+                      </div>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}
+                        onClick={() => {
+                          setTitle(idea.title || idea);
+                          setCaption(idea.angle || idea.hook || '');
+                          setCurrentView('calendar');
+                          openModal();
+                        }}
+                      >
+                        <Plus size={14} /> Schedule this Idea
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: AI CAPTION WRITER */}
+          {aiStudioTab === 'caption' && (
+            <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Generate Platform Tailored Copy</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                <div>
+                  <label className="form-label">Post Topic</label>
+                  <input type="text" className="input-control" value={captionTopic} onChange={(e) => setCaptionTopic(e.target.value)} placeholder="e.g. 5 AI Automation Workflows" />
+                </div>
+                <div>
+                  <label className="form-label">Target Channel</label>
+                  <select className="select-control" value={captionPlatform} onChange={(e) => setCaptionPlatform(e.target.value)}>
+                    <option value="linkedin">💼 LinkedIn</option>
+                    <option value="twitter">🐦 X / Twitter</option>
+                    <option value="instagram">📸 Instagram</option>
+                    <option value="tiktok">🎵 TikTok</option>
+                  </select>
+                </div>
+              </div>
+              <button className="btn btn-primary" onClick={handleRunAiCaptionStudio} disabled={generatingCaptionState}>
+                <Wand2 size={16} /> {generatingCaptionState ? 'Writing Copy...' : 'Generate Copy & Hashtags'}
+              </button>
+
+              {generatedCaptionResult && (
+                <div style={{ marginTop: '24px', background: 'rgba(0,0,0,0.3)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  <h4 style={{ color: '#c084fc', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '700' }}>Generated Copy Result:</h4>
+                  <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.88rem', color: '#fff', fontFamily: 'inherit' }}>{generatedCaptionResult.caption}</pre>
+                  <button className="btn btn-cyan btn-sm" style={{ marginTop: '12px' }} onClick={() => { setTitle(captionTopic || 'AI Post'); setCaption(generatedCaptionResult.caption); setCurrentView('calendar'); openModal(); }}>
+                    <Plus size={14} /> Schedule This Copy
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: HASHTAG RESEARCH */}
+          {aiStudioTab === 'hashtags' && (
+            <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Research High Volume & Niche Hashtags</h3>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+                <input type="text" className="input-control" value={hashtagTopic} onChange={(e) => setHashtagTopic(e.target.value)} placeholder="Topic keyword..." />
+                <button className="btn btn-primary" onClick={handleRunHashtagResearch} disabled={researchingTags}>
+                  <Hash size={16} /> {researchingTags ? 'Researching...' : 'Find Hashtags'}
+                </button>
+              </div>
+
+              {hashtagResults && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginTop: '20px' }}>
+                  <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '16px', borderRadius: '12px' }}>
+                    <h4 style={{ color: '#c084fc', marginBottom: '8px', fontSize: '0.85rem' }}>High Volume Hashtags</h4>
+                    {hashtagResults.highVolume?.map(h => <span key={h.tag} style={{ display: 'inline-block', background: 'rgba(139, 92, 246, 0.2)', padding: '4px 8px', borderRadius: '6px', margin: '4px', fontSize: '0.8rem', color: '#fff' }}>{h.tag}</span>)}
+                  </div>
+
+                  <div style={{ background: 'rgba(6, 182, 212, 0.1)', padding: '16px', borderRadius: '12px' }}>
+                    <h4 style={{ color: '#22d3ee', marginBottom: '8px', fontSize: '0.85rem' }}>Niche Targeted</h4>
+                    {hashtagResults.nicheTargeted?.map(h => <span key={h.tag} style={{ display: 'inline-block', background: 'rgba(6, 182, 212, 0.2)', padding: '4px 8px', borderRadius: '6px', margin: '4px', fontSize: '0.8rem', color: '#fff' }}>{h.tag}</span>)}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: ENGAGEMENT PREDICTOR */}
+          {aiStudioTab === 'predict' && (
+            <div className="glass-panel" style={{ padding: '28px', borderRadius: '16px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '16px' }}>Predictive Engagement Score Analyzer</h3>
+              <textarea className="textarea-control" rows={4} value={predictCaption} onChange={(e) => setPredictCaption(e.target.value)} style={{ marginBottom: '16px' }} />
+              <button className="btn btn-primary" onClick={handleRunPrediction}>
+                <TrendingUp size={16} /> Predict Engagement Score
+              </button>
+
+              {predictionResult && (
+                <div style={{ marginTop: '20px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '20px', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#34d399' }}>{predictionResult.score}%</div>
+                    <div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>Grade: {predictionResult.grade}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Estimated Reach: {predictionResult.estimatedReachMultiplier}</div>
+                    </div>
+                  </div>
+                  {predictionResult.analysis?.map((item, idx) => (
+                    <div key={idx} style={{ fontSize: '0.85rem', color: '#e2e8f0', margin: '4px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CheckCircle2 size={14} color="#34d399" /> {item.text}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* AUTHENTICATION MODAL */}
+      {/* AUTH MODAL */}
       {authModalOpen && (
         <div className="modal-overlay" onClick={() => setAuthModalOpen(false)}>
           <div className="modal-container" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
@@ -871,41 +1067,6 @@ export default function App() {
               </div>
               <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setAuthModalOpen(false)}>
                 <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', marginBottom: '20px', border: '1px solid var(--border-color)' }}>
-              <button
-                onClick={() => setAuthMode('login')}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  fontWeight: '700',
-                  border: 'none',
-                  background: authMode === 'login' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                  color: authMode === 'login' ? '#fff' : 'var(--text-muted)',
-                  cursor: 'pointer'
-                }}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => setAuthMode('signup')}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  fontWeight: '700',
-                  border: 'none',
-                  background: authMode === 'signup' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                  color: authMode === 'signup' ? '#fff' : 'var(--text-muted)',
-                  cursor: 'pointer'
-                }}
-              >
-                Create Account
               </button>
             </div>
 
@@ -931,26 +1092,11 @@ export default function App() {
                 <LogIn size={16} /> {authMode === 'login' ? 'Sign In to Dashboard' : 'Create Free Account'}
               </button>
             </form>
-
-            <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '20px', paddingTop: '16px', textAlign: 'center' }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => {
-                  setAuthEmail('demo@socialsync.ai');
-                  setAuthName('Demo Lead');
-                  handleAuthSubmit({ preventDefault: () => {} });
-                }}
-              >
-                ⚡ 1-Click Instant Demo Login
-              </button>
-            </div>
           </div>
         </div>
       )}
 
-      {/* CONNECT SOCIAL ACCOUNTS MODAL */}
+      {/* CONNECT ACCOUNTS MODAL */}
       {settingsModalOpen && (
         <div className="modal-overlay" onClick={() => setSettingsModalOpen(false)}>
           <div className="modal-container" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
@@ -966,54 +1112,31 @@ export default function App() {
 
             <form onSubmit={handleSaveSocialAccount}>
               <div className="form-group">
-                <label className="form-label">User Email Account</label>
-                <input type="email" className="input-control" value={currentUser?.email || 'creator@socialsync.ai'} disabled />
+                <label className="form-label">LinkedIn OAuth Access Token</label>
+                <textarea className="textarea-control" rows={3} value={userLinkedinToken} onChange={(e) => setUserLinkedinToken(e.target.value)} placeholder="Paste personal LinkedIn token..." />
               </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>LinkedIn OAuth Access Token</span>
-                  <a href="https://www.linkedin.com/developers/tools/oauth" target="_blank" rel="noreferrer" style={{ color: '#22d3ee', fontSize: '0.78rem' }}>
-                    Generate Token <ExternalLink size={12} />
-                  </a>
-                </label>
-                <textarea className="textarea-control" rows={3} value={userLinkedinToken} onChange={(e) => setUserLinkedinToken(e.target.value)} placeholder="Paste your personal LinkedIn OAuth Access Token..." style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} />
-              </div>
-
-              {tokenSavedStatus && (
-                <div style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                  <CheckCircle2 size={16} /> Personal Social Accounts Saved Successfully!
-                </div>
-              )}
-
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setSettingsModalOpen(false)}>Close</button>
-                <button type="submit" className="btn btn-primary">
-                  <Check size={16} /> Save Connected Accounts
-                </button>
+                <button type="submit" className="btn btn-primary">Save Accounts</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Schedule / Edit Post Modal */}
+      {/* SCHEDULE MODAL */}
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-container" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: '800' }}>
-                {editingPost ? 'Edit Scheduled Post' : 'Schedule New Post'}
-              </h2>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={closeModal}>
-                <X size={20} />
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: '800' }}>{editingPost ? 'Edit Scheduled Post' : 'Schedule New Post'}</h2>
+              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={closeModal}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleSavePost}>
               <div className="form-group">
                 <label className="form-label">Post Title *</label>
-                <input type="text" className="input-control" placeholder="e.g. 5 AI Automation Workflows" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                <input type="text" className="input-control" placeholder="Post title..." value={title} onChange={(e) => setTitle(e.target.value)} required />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -1023,8 +1146,6 @@ export default function App() {
                     <option value="linkedin">💼 LinkedIn</option>
                     <option value="twitter">🐦 X / Twitter</option>
                     <option value="instagram">📸 Instagram</option>
-                    <option value="tiktok">🎵 TikTok</option>
-                    <option value="facebook">📘 Facebook</option>
                   </select>
                 </div>
 
@@ -1032,7 +1153,6 @@ export default function App() {
                   <label className="form-label">Post Status</label>
                   <select className="select-control" value={status} onChange={(e) => setStatus(e.target.value)}>
                     <option value="draft">📝 Draft</option>
-                    <option value="in_review">👀 In Review</option>
                     <option value="scheduled">📅 Scheduled</option>
                     <option value="published">🚀 Published</option>
                   </select>
@@ -1040,25 +1160,23 @@ export default function App() {
 
                 <div className="form-group">
                   <label className="form-label">Scheduled Date *</label>
-                  <input type="date" className="input-control" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} style={{ fontSize: '0.95rem', background: '#090d16', borderColor: '#a78bfa' }} required />
+                  <input type="date" className="input-control" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} required />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Scheduled Time *</label>
-                  <input type="time" className="input-control" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} style={{ fontSize: '0.95rem', background: '#090d16', borderColor: '#a78bfa' }} required />
+                  <input type="time" className="input-control" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} required />
                 </div>
               </div>
 
               <div className="form-group" style={{ marginTop: '14px' }}>
                 <label className="form-label">Caption Copy</label>
-                <textarea className="textarea-control" rows={5} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write or paste your post content..." />
+                <textarea className="textarea-control" rows={5} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write caption..." />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary">
-                  <Check size={18} /> {editingPost ? 'Update Post in Supabase' : 'Schedule & Trigger Agent'}
-                </button>
+                <button type="submit" className="btn btn-primary"><Check size={18} /> {editingPost ? 'Update Post' : 'Schedule & Trigger Agent'}</button>
               </div>
             </form>
           </div>
