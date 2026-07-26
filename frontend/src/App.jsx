@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import {
   Calendar as CalendarIcon,
@@ -142,6 +142,35 @@ export default function App() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [notificationOpen]);
+
+  // Sync URL subpath with filterPlatform state (/calendar/linkedin, /calendar/twitter, etc.)
+  useEffect(() => {
+    const path = location.pathname.toLowerCase();
+    if (path.startsWith('/calendar')) {
+      const parts = path.split('/').filter(Boolean); // ['calendar', 'linkedin']
+      if (parts.length >= 2) {
+        const param = parts[1];
+        if (param === 'linkedin' || param === 'linkden') {
+          setFilterPlatform('linkedin');
+        } else if (['twitter', 'instagram', 'tiktok', 'facebook', 'all'].includes(param)) {
+          setFilterPlatform(param);
+        } else {
+          setFilterPlatform('all');
+        }
+      } else {
+        setFilterPlatform('all');
+      }
+    }
+  }, [location.pathname]);
+
+  const handleFilterSelect = (p) => {
+    setFilterPlatform(p);
+    if (p === 'all') {
+      navigate('/calendar');
+    } else {
+      navigate(`/calendar/${p}`);
+    }
+  };
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
@@ -738,6 +767,213 @@ export default function App() {
     }
   ];
 
+  // Shared Calendar Component View
+  const CalendarComponent = () => (
+    !currentUser ? (
+      <div style={{ maxWidth: '600px', margin: '80px auto', padding: '40px', textAlign: 'center' }} className="glass-panel">
+        <Lock size={48} color="#8b5cf6" style={{ marginBottom: '16px' }} />
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '10px' }}>Authentication Required</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '24px' }}>
+          Please sign in to view your scheduled content calendar and post plans.
+        </p>
+        <button className="btn btn-primary" style={{ margin: '0 auto' }} onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
+          <LogIn size={18} /> Sign In / Demo Login
+        </button>
+      </div>
+    ) : (
+      <div style={{ padding: '24px' }}>
+        <div style={{ maxWidth: '1300px', margin: '0 auto 24px auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+            <div>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Social Media Content Calendar
+              </h1>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                Active User: <code style={{ color: '#22d3ee' }}>{currentUser.email}</code>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <button
+                  onClick={() => setCalendarDisplayMode('month')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    border: 'none',
+                    background: calendarDisplayMode === 'month' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                    color: calendarDisplayMode === 'month' ? '#fff' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <LayoutGrid size={14} /> 📅 Month Grid
+                </button>
+
+                <button
+                  onClick={() => setCalendarDisplayMode('cards')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    border: 'none',
+                    background: calendarDisplayMode === 'cards' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                    color: calendarDisplayMode === 'cards' ? '#fff' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <List size={14} /> 📋 Cards View
+                </button>
+              </div>
+
+              <button className="btn btn-primary" onClick={() => openModal()}>
+                <Plus size={18} /> Schedule New Post
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 22, 35, 0.8)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={16} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)' }}>Filter Channel:</span>
+              {['all', 'linkedin', 'twitter', 'instagram', 'tiktok', 'facebook'].map(p => (
+                <button
+                  key={p}
+                  onClick={() => handleFilterSelect(p)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.78rem',
+                    fontWeight: '600',
+                    border: filterPlatform === p ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                    background: filterPlatform === p ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                    color: filterPlatform === p ? '#c084fc' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {p === 'all' ? '🌐 All Posts' : p}
+                </button>
+              ))}
+            </div>
+
+            <button className="btn btn-secondary btn-sm" onClick={() => fetchPosts(false)}>
+              <RefreshCw size={14} /> Sync Supabase
+            </button>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+          {calendarDisplayMode === 'month' ? (
+            renderMonthGrid()
+          ) : (
+            <div>
+              {filteredPosts.length === 0 ? (
+                <div className="glass-panel" style={{ textAlign: 'center', padding: '60px 24px', borderRadius: '20px' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                    <FolderOpen size={32} color="#c084fc" />
+                  </div>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '8px', color: '#fff' }}>
+                    No Posts Available {filterPlatform !== 'all' ? `for ${filterPlatform.toUpperCase()}` : ''} 📭
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '480px', margin: '0 auto 24px auto', lineHeight: 1.6 }}>
+                    You haven't scheduled any posts for this platform yet. Click below to create your first post or generate viral copy in AI Studio!
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <button className="btn btn-primary" onClick={() => openModal()}>
+                      <Plus size={18} /> Schedule New Post
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => navigate('/ai-studio')}>
+                      <Sparkles size={18} color="#c084fc" /> Generate Copy in AI Studio
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  {filteredPosts.map(p => (
+                    <div
+                      key={p.id}
+                      className="glass-panel glass-panel-hover"
+                      style={{
+                        padding: '20px',
+                        borderRadius: '16px',
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '14px',
+                        borderLeft: `5px solid ${p.color || '#8b5cf6'}`
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>{getPlatformIcon(p.platform)}</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{p.platform}</span>
+                          </div>
+                          {getStatusBadge(p.status)}
+                        </div>
+
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', marginBottom: '6px', lineHeight: 1.3 }}>{p.title}</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {p.caption || 'No caption text.'}
+                        </p>
+
+                        {/* IMAGE PHOTO PREVIEW ON POST CARD */}
+                        {p.image_url && (
+                          <div style={{ marginTop: '10px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                            <img src={p.image_url} alt={p.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                            <Clock size={14} color="#06b6d4" />
+                            <span>{new Date(p.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)}>
+                              <Edit3 size={14} /> Edit
+                            </button>
+                            <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {p.platform === 'linkedin' && p.status !== 'published' && (
+                          <button
+                            className="btn btn-cyan btn-sm"
+                            style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}
+                            onClick={() => handlePublishLinkedInNow(p.id)}
+                            disabled={publishingId === p.id}
+                          >
+                            <Send size={14} /> {publishingId === p.id ? 'Publishing Agent Running...' : '🚀 Publish Live to LinkedIn Agent'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  );
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
@@ -1248,212 +1484,9 @@ export default function App() {
             </div>
           } />
 
-          {/* ROUTE 2: /calendar */}
-          <Route path="/calendar" element={
-            !currentUser ? (
-              <div style={{ maxWidth: '600px', margin: '80px auto', padding: '40px', textAlign: 'center' }} className="glass-panel">
-                <Lock size={48} color="#8b5cf6" style={{ marginBottom: '16px' }} />
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '10px' }}>Authentication Required</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '24px' }}>
-                  Please sign in to view your scheduled content calendar and post plans.
-                </p>
-                <button className="btn btn-primary" style={{ margin: '0 auto' }} onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
-                  <LogIn size={18} /> Sign In / Demo Login
-                </button>
-              </div>
-            ) : (
-              <div style={{ padding: '24px' }}>
-                <div style={{ maxWidth: '1300px', margin: '0 auto 24px auto' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-                    <div>
-                      <h1 style={{ fontSize: '1.8rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        Social Media Content Calendar
-                      </h1>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                        Active User: <code style={{ color: '#22d3ee' }}>{currentUser.email}</code>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                        <button
-                          onClick={() => setCalendarDisplayMode('month')}
-                          style={{
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: '700',
-                            border: 'none',
-                            background: calendarDisplayMode === 'month' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                            color: calendarDisplayMode === 'month' ? '#fff' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          <LayoutGrid size={14} /> 📅 Month Grid
-                        </button>
-
-                        <button
-                          onClick={() => setCalendarDisplayMode('cards')}
-                          style={{
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: '700',
-                            border: 'none',
-                            background: calendarDisplayMode === 'cards' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
-                            color: calendarDisplayMode === 'cards' ? '#fff' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          <List size={14} /> 📋 Cards View
-                        </button>
-                      </div>
-
-                      <button className="btn btn-primary" onClick={() => openModal()}>
-                        <Plus size={18} /> Schedule New Post
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 22, 35, 0.8)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Filter size={16} color="var(--text-muted)" />
-                      <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)' }}>Filter Channel:</span>
-                      {['all', 'linkedin', 'twitter', 'instagram', 'tiktok', 'facebook'].map(p => (
-                        <button
-                          key={p}
-                          onClick={() => setFilterPlatform(p)}
-                          style={{
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '0.78rem',
-                            fontWeight: '600',
-                            border: filterPlatform === p ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                            background: filterPlatform === p ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                            color: filterPlatform === p ? '#c084fc' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            textTransform: 'capitalize'
-                          }}
-                        >
-                          {p === 'all' ? '🌐 All Posts' : p}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button className="btn btn-secondary btn-sm" onClick={() => fetchPosts(false)}>
-                      <RefreshCw size={14} /> Sync Supabase
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-                  {calendarDisplayMode === 'month' ? (
-                    renderMonthGrid()
-                  ) : (
-                    <div>
-                      {filteredPosts.length === 0 ? (
-                        <div className="glass-panel" style={{ textAlign: 'center', padding: '60px 24px', borderRadius: '20px' }}>
-                          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
-                            <FolderOpen size={32} color="#c084fc" />
-                          </div>
-                          <h3 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '8px', color: '#fff' }}>
-                            No Posts Available {filterPlatform !== 'all' ? `for ${filterPlatform.toUpperCase()}` : ''} 📭
-                          </h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '480px', margin: '0 auto 24px auto', lineHeight: 1.6 }}>
-                            You haven't scheduled any posts for this platform yet. Click below to create your first post or generate viral copy in AI Studio!
-                          </p>
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                            <button className="btn btn-primary" onClick={() => openModal()}>
-                              <Plus size={18} /> Schedule New Post
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => navigate('/ai-studio')}>
-                              <Sparkles size={18} color="#c084fc" /> Generate Copy in AI Studio
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-                          {filteredPosts.map(p => (
-                            <div
-                              key={p.id}
-                              className="glass-panel glass-panel-hover"
-                              style={{
-                                padding: '20px',
-                                borderRadius: '16px',
-                                position: 'relative',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                                gap: '14px',
-                                borderLeft: `5px solid ${p.color || '#8b5cf6'}`
-                              }}
-                            >
-                              <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '1.2rem' }}>{getPlatformIcon(p.platform)}</span>
-                                    <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{p.platform}</span>
-                                  </div>
-                                  {getStatusBadge(p.status)}
-                                </div>
-
-                                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', marginBottom: '6px', lineHeight: 1.3 }}>{p.title}</h3>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'pre-line', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                  {p.caption || 'No caption text.'}
-                                </p>
-
-                                {/* IMAGE PHOTO PREVIEW ON POST CARD */}
-                                {p.image_url && (
-                                  <div style={{ marginTop: '10px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                                    <img src={p.image_url} alt={p.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
-                                  </div>
-                                )}
-                              </div>
-
-                              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                                    <Clock size={14} color="#06b6d4" />
-                                    <span>{new Date(p.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                  </div>
-
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => openModal(p)}>
-                                      <Edit3 size={14} /> Edit
-                                    </button>
-                                    <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', color: '#fca5a5' }} onClick={() => handleDeletePost(p.id)}>
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {p.platform === 'linkedin' && p.status !== 'published' && (
-                                  <button
-                                    className="btn btn-cyan btn-sm"
-                                    style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}
-                                    onClick={() => handlePublishLinkedInNow(p.id)}
-                                    disabled={publishingId === p.id}
-                                  >
-                                    <Send size={14} /> {publishingId === p.id ? 'Publishing Agent Running...' : '🚀 Publish Live to LinkedIn Agent'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          } />
+          {/* ROUTE 2: /calendar AND /calendar/:platformParam */}
+          <Route path="/calendar" element={<CalendarComponent />} />
+          <Route path="/calendar/:platformParam" element={<CalendarComponent />} />
 
           {/* ROUTE 3: /ai-studio */}
           <Route path="/ai-studio" element={
