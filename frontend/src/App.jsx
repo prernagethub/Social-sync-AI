@@ -30,11 +30,25 @@ import {
   LogIn,
   LogOut,
   UserCheck,
-  Lock,
-  Mail,
-  Shield
+  Shield,
+  LayoutGrid,
+  List,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  isSameMonth,
+  isSameDay,
+  addDays
+} from 'date-fns';
 import { generateCaption, generatePostIdeas } from './services/aiEngine';
 
 const SQL_SCHEMA_SCRIPT = `-- Multi-User Social Accounts Schema
@@ -65,7 +79,10 @@ const getTodayTimeString = (dateVal = null) => {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('landing');
+  const [currentView, setCurrentView] = useState('calendar'); // 'landing' | 'calendar' | 'ai_studio'
+  const [calendarDisplayMode, setCalendarDisplayMode] = useState('month'); // 'month' | 'cards'
+  const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
+
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -90,12 +107,12 @@ export default function App() {
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'
     };
   });
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [authMode, setAuthMode] = useState('login');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
 
-  // User Profile & Social Token State
+  // User Profile & Tokens State
   const [userLinkedinToken, setUserLinkedinToken] = useState('');
   const [tokenSavedStatus, setTokenSavedStatus] = useState(false);
 
@@ -157,7 +174,7 @@ export default function App() {
     };
   }, []);
 
-  // Auth Functions
+  // Auth Handlers
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     const newUser = {
@@ -274,7 +291,7 @@ export default function App() {
     setTimeout(() => setCopiedSql(false), 2000);
   };
 
-  const openModal = (post = null) => {
+  const openModal = (post = null, targetDateString = null) => {
     if (post) {
       setEditingPost(post);
       setTitle(post.title || '');
@@ -289,7 +306,7 @@ export default function App() {
       setTitle('');
       setCaption('');
       setPlatform('linkedin');
-      setScheduledDate(getTodayDateString());
+      setScheduledDate(targetDateString || getTodayDateString());
       setScheduledTime(getTodayTimeString());
       setStatus('draft');
       setColor('#8b5cf6');
@@ -350,12 +367,152 @@ export default function App() {
     }
   };
 
+  // Calendar Month Grid Generator Logic
+  const renderMonthGrid = () => {
+    const monthStart = startOfMonth(currentMonthDate);
+    const monthEnd = endOfMonth(monthStart);
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+    const rows = [];
+    let days = [];
+    let day = startDate;
+
+    while (day <= endDate) {
+      for (let i = 0; i < 7; i++) {
+        const formattedDate = format(day, 'yyyy-MM-dd');
+        const dayPosts = filteredPosts.filter(p => {
+          if (!p.scheduled_at) return false;
+          return format(new Date(p.scheduled_at), 'yyyy-MM-dd') === formattedDate;
+        });
+
+        const isCurrentMonth = isSameMonth(day, monthStart);
+        const isToday = isSameDay(day, new Date());
+        const targetDateStr = formattedDate;
+
+        days.push(
+          <div
+            key={formattedDate}
+            style={{
+              minHeight: '125px',
+              background: isCurrentMonth ? 'rgba(18, 24, 38, 0.6)' : 'rgba(8, 11, 17, 0.3)',
+              border: isToday ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
+              borderRadius: '10px',
+              padding: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              opacity: isCurrentMonth ? 1 : 0.45,
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{
+                fontSize: '0.85rem',
+                fontWeight: isToday ? '900' : '600',
+                color: isToday ? '#c084fc' : 'var(--text-muted)',
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: isToday ? 'rgba(139, 92, 246, 0.25)' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {format(day, 'd')}
+              </span>
+
+              <button
+                title="Schedule post on this date"
+                onClick={() => openModal(null, targetDateStr)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-dim)',
+                  cursor: 'pointer',
+                  opacity: 0.7
+                }}
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', maxHeight: '110px' }}>
+              {dayPosts.map(p => (
+                <div
+                  key={p.id}
+                  onClick={() => openModal(p)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '6px',
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    borderLeft: `3px solid ${p.color || '#8b5cf6'}`,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: '700', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>
+                      {getPlatformIcon(p.platform)} {p.title}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: p.status === 'published' ? '#34d399' : '#a78bfa' }}>
+                      {p.status === 'published' ? '🚀' : '📅'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+        day = addDays(day, 1);
+      }
+      rows.push(
+        <div key={day.toString()} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+          {days}
+        </div>
+      );
+      days = [];
+    }
+
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return (
+      <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '800' }}>
+              {format(currentMonthDate, 'MMMM yyyy')}
+            </h2>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setCurrentMonthDate(subMonths(currentMonthDate, 1))}><ChevronLeft size={16} /></button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setCurrentMonthDate(new Date())} style={{ fontSize: '0.78rem' }}>Today</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setCurrentMonthDate(addMonths(currentMonthDate, 1))}><ChevronRight size={16} /></button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px', textAlign: 'center' }}>
+          {weekDays.map(d => (
+            <div key={d} style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              {d}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {rows}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* ---------------------------------------------------- */}
-      {/* NAVBAR WITH AUTHENTICATION INTEGRATION               */}
-      {/* ---------------------------------------------------- */}
+      {/* GLOBAL NAVBAR */}
       <nav style={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100, padding: '12px 24px' }}>
         <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           
@@ -368,7 +525,6 @@ export default function App() {
             </span>
           </div>
 
-          {/* Navigation View Tabs */}
           <div style={{ display: 'flex', gap: '8px', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
             <button
               onClick={() => setCurrentView('landing')}
@@ -428,7 +584,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* Right Navbar Controls & Authentication */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button className="btn btn-secondary btn-sm" onClick={() => setSettingsModalOpen(true)}>
               <Settings size={15} color="#06b6d4" /> Accounts
@@ -436,20 +591,12 @@ export default function App() {
 
             {currentUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(30, 41, 59, 0.7)', padding: '4px 12px 4px 6px', borderRadius: '30px', border: '1px solid var(--border-color)' }}>
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #8b5cf6' }}
-                />
+                <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #8b5cf6' }} />
                 <div style={{ fontSize: '0.8rem', lineHeight: 1.2 }}>
                   <div style={{ fontWeight: '700', color: '#fff' }}>{currentUser.name}</div>
                   <div style={{ color: '#06b6d4', fontSize: '0.7rem' }}>{currentUser.role}</div>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }}
-                  title="Sign Out"
-                >
+                <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }} title="Sign Out">
                   <LogOut size={15} />
                 </button>
               </div>
@@ -493,47 +640,13 @@ export default function App() {
               </div>
             </div>
           </section>
-
-          <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 80px 24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #8b5cf6' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                  <UserCheck size={26} color="#c084fc" />
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Navbar Authentication</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                  Log in directly from the top navigation bar. Every team member gets their own workspace and personal social media account credentials.
-                </p>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #06b6d4' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                  <Bot size={26} color="#22d3ee" />
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>CrewAI Background Publishing</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                  Background agents process due posts, verify content formatting, and trigger live REST API posts directly to LinkedIn & X.
-                </p>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #10b981' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                  <Database size={26} color="#34d399" />
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Live Supabase Data Store</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                  Direct connection to Supabase <code>content_calendar</code> and <code>user_social_accounts</code> tables with real-time UI auto-updates.
-                </p>
-              </div>
-            </div>
-          </section>
         </div>
       )}
 
-      {/* VIEW 2: CALENDAR DASHBOARD */}
+      {/* VIEW 2: CONTENT CALENDAR DASHBOARD */}
       {currentView === 'calendar' && (
         <div style={{ padding: '24px' }}>
-          <div style={{ maxWidth: '1300px', margin: '0 auto 28px auto' }}>
+          <div style={{ maxWidth: '1300px', margin: '0 auto 24px auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
               <div>
                 <h1 style={{ fontSize: '1.8rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -544,11 +657,55 @@ export default function App() {
                 </div>
               </div>
 
-              <button className="btn btn-primary" onClick={() => openModal()}>
-                <Plus size={18} /> Schedule New Post
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* View Mode Switcher */}
+                <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <button
+                    onClick={() => setCalendarDisplayMode('month')}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      fontWeight: '700',
+                      border: 'none',
+                      background: calendarDisplayMode === 'month' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                      color: calendarDisplayMode === 'month' ? '#fff' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <LayoutGrid size={14} /> 📅 Month Grid
+                  </button>
+
+                  <button
+                    onClick={() => setCalendarDisplayMode('cards')}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      fontWeight: '700',
+                      border: 'none',
+                      background: calendarDisplayMode === 'cards' ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'transparent',
+                      color: calendarDisplayMode === 'cards' ? '#fff' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <List size={14} /> 📋 Cards View
+                  </button>
+                </div>
+
+                <button className="btn btn-primary" onClick={() => openModal()}>
+                  <Plus size={18} /> Schedule New Post
+                </button>
+              </div>
             </div>
 
+            {/* Filter Controls */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 22, 35, 0.8)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Filter size={16} color="var(--text-muted)" />
@@ -581,18 +738,8 @@ export default function App() {
           </div>
 
           <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-            {loading ? (
-              <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <div className="pulse-glow" style={{ fontSize: '1.2rem', fontWeight: '700' }}>Connecting to Supabase database...</div>
-              </div>
-            ) : filteredPosts.length === 0 ? (
-              <div className="glass-panel" style={{ padding: '60px', textAlign: 'center', borderRadius: '16px' }}>
-                <h3 style={{ fontSize: '1.3rem', marginBottom: '8px' }}>No posts found in Supabase</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>Your <code>content_calendar</code> table is ready. Click below to add your first post!</p>
-                <button className="btn btn-primary" onClick={() => openModal()}>
-                  <Plus size={18} /> Schedule Post in Supabase
-                </button>
-              </div>
+            {calendarDisplayMode === 'month' ? (
+              renderMonthGrid()
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
                 {filteredPosts.map(p => (
@@ -711,9 +858,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ---------------------------------------------------- */}
-      {/* AUTHENTICATION MODAL (SIGN IN / SIGN UP)            */}
-      {/* ---------------------------------------------------- */}
+      {/* AUTHENTICATION MODAL */}
       {authModalOpen && (
         <div className="modal-overlay" onClick={() => setAuthModalOpen(false)}>
           <div className="modal-container" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
@@ -729,7 +874,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Auth Mode Toggle Tabs */}
             <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.6)', padding: '4px', borderRadius: '10px', marginBottom: '20px', border: '1px solid var(--border-color)' }}>
               <button
                 onClick={() => setAuthMode('login')}
@@ -769,39 +913,18 @@ export default function App() {
               {authMode === 'signup' && (
                 <div className="form-group">
                   <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    className="input-control"
-                    placeholder="e.g. Alex Morgan"
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    required
-                  />
+                  <input type="text" className="input-control" placeholder="e.g. Alex Morgan" value={authName} onChange={(e) => setAuthName(e.target.value)} required />
                 </div>
               )}
 
               <div className="form-group">
                 <label className="form-label">Email Address *</label>
-                <input
-                  type="email"
-                  className="input-control"
-                  placeholder="alex@company.com"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  required
-                />
+                <input type="email" className="input-control" placeholder="alex@company.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Password *</label>
-                <input
-                  type="password"
-                  className="input-control"
-                  placeholder="••••••••"
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  required
-                />
+                <input type="password" className="input-control" placeholder="••••••••" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required />
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }}>
@@ -827,7 +950,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MULTI-USER CONNECT SOCIAL ACCOUNTS MODAL */}
+      {/* CONNECT SOCIAL ACCOUNTS MODAL */}
       {settingsModalOpen && (
         <div className="modal-overlay" onClick={() => setSettingsModalOpen(false)}>
           <div className="modal-container" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
@@ -841,19 +964,10 @@ export default function App() {
               </button>
             </div>
 
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px', lineHeight: 1.5 }}>
-              Each team member can link their personal social accounts here. Scheduled posts will automatically route through your personal OAuth tokens!
-            </p>
-
             <form onSubmit={handleSaveSocialAccount}>
               <div className="form-group">
                 <label className="form-label">User Email Account</label>
-                <input
-                  type="email"
-                  className="input-control"
-                  value={currentUser?.email || 'creator@socialsync.ai'}
-                  disabled
-                />
+                <input type="email" className="input-control" value={currentUser?.email || 'creator@socialsync.ai'} disabled />
               </div>
 
               <div className="form-group">
@@ -863,14 +977,7 @@ export default function App() {
                     Generate Token <ExternalLink size={12} />
                   </a>
                 </label>
-                <textarea
-                  className="textarea-control"
-                  rows={3}
-                  value={userLinkedinToken}
-                  onChange={(e) => setUserLinkedinToken(e.target.value)}
-                  placeholder="Paste your personal LinkedIn OAuth Access Token..."
-                  style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}
-                />
+                <textarea className="textarea-control" rows={3} value={userLinkedinToken} onChange={(e) => setUserLinkedinToken(e.target.value)} placeholder="Paste your personal LinkedIn OAuth Access Token..." style={{ fontSize: '0.8rem', fontFamily: 'monospace' }} />
               </div>
 
               {tokenSavedStatus && (
