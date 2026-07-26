@@ -116,6 +116,8 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState('profile');
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
@@ -147,7 +149,7 @@ export default function App() {
   useEffect(() => {
     const path = location.pathname.toLowerCase();
     if (path.startsWith('/calendar')) {
-      const parts = path.split('/').filter(Boolean); // ['calendar', 'linkedin']
+      const parts = path.split('/').filter(Boolean);
       if (parts.length >= 2) {
         const param = parts[1];
         if (param === 'linkedin' || param === 'linkden') {
@@ -172,7 +174,7 @@ export default function App() {
     }
   };
 
-  // Authentication State
+  // Authentication & Profile State
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('socialsync_user');
     return saved ? JSON.parse(saved) : null;
@@ -181,6 +183,60 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
+
+  // Profile Edit State
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
+  const [userPlan, setUserPlan] = useState('Pro Team Plan (₹499/mo)');
+
+  // Password Change State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordNotice, setPasswordNotice] = useState(null);
+
+  // Sync profile edit state when currentUser changes or modal opens
+  useEffect(() => {
+    if (currentUser) {
+      setEditName(currentUser.name || '');
+      setEditEmail(currentUser.email || '');
+      setEditAvatar(currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.email}`);
+    }
+  }, [currentUser, profileModalOpen]);
+
+  // Save Profile Handler
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    const updated = {
+      ...currentUser,
+      name: editName.trim() || currentUser.name,
+      email: editEmail.trim() || currentUser.email,
+      avatar: editAvatar || currentUser.avatar
+    };
+    setCurrentUser(updated);
+    localStorage.setItem('socialsync_user', JSON.stringify(updated));
+    try { confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } }); } catch (err) {}
+    alert('Profile updated successfully! ✨');
+  };
+
+  // Save Password Handler
+  const handleChangePassword = (e) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setPasswordNotice({ type: 'error', text: 'New password must be at least 6 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordNotice({ type: 'error', text: 'New password and confirm password do not match.' });
+      return;
+    }
+    setPasswordNotice({ type: 'success', text: 'Password changed successfully! 🔒' });
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    try { confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } }); } catch (err) {}
+  };
 
   // User Profile & Tokens State
   const [userLinkedinToken, setUserLinkedinToken] = useState('');
@@ -334,6 +390,7 @@ export default function App() {
     localStorage.removeItem('socialsync_user');
     localStorage.removeItem('socialsync_last_path');
     setNotificationOpen(false);
+    setProfileModalOpen(false);
     navigate('/home');
   };
 
@@ -1174,13 +1231,29 @@ export default function App() {
                     <Settings size={15} color="#06b6d4" /> Accounts
                   </button>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(30, 41, 59, 0.7)', padding: '4px 12px 4px 6px', borderRadius: '30px', border: '1px solid var(--border-color)' }}>
+                  {/* USER PROFILE PILL BUTTON (OPENS PROFILE & ACCOUNT SETTINGS MODAL) */}
+                  <div
+                    onClick={() => setProfileModalOpen(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      background: 'rgba(30, 41, 59, 0.7)',
+                      padding: '4px 12px 4px 6px',
+                      borderRadius: '30px',
+                      border: '1px solid var(--border-color)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title="Click to Open Account Settings & Profile"
+                    className="profile-pill-hover"
+                  >
                     <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #8b5cf6' }} />
                     <div style={{ fontSize: '0.8rem', lineHeight: 1.2 }}>
                       <div style={{ fontWeight: '700', color: '#fff' }}>{currentUser.name}</div>
                       <div style={{ color: '#06b6d4', fontSize: '0.7rem' }}>{currentUser.role}</div>
                     </div>
-                    <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }} title="Sign Out">
+                    <button onClick={(e) => { e.stopPropagation(); handleLogout(); }} style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }} title="Sign Out">
                       <LogOut size={15} />
                     </button>
                   </div>
@@ -1820,6 +1893,158 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* USER PROFILE & ACCOUNT SETTINGS MODAL */}
+      {profileModalOpen && (
+        <div className="modal-overlay" onClick={() => setProfileModalOpen(false)}>
+          <div className="modal-container" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src={currentUser?.avatar} alt="Avatar" style={{ width: '42px', height: '42px', borderRadius: '50%', border: '2px solid #8b5cf6' }} />
+                <div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: '800', margin: 0, color: '#fff' }}>Account & Profile Settings</h2>
+                  <div style={{ fontSize: '0.8rem', color: '#06b6d4' }}>{currentUser?.email}</div>
+                </div>
+              </div>
+              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setProfileModalOpen(false)}><X size={20} /></button>
+            </div>
+
+            {/* Modal Nav Tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', overflowX: 'auto' }}>
+              <button
+                onClick={() => setProfileTab('profile')}
+                className={`btn ${profileTab === 'profile' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.85rem' }}
+              >
+                👤 Edit Profile
+              </button>
+              <button
+                onClick={() => setProfileTab('password')}
+                className={`btn ${profileTab === 'password' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.85rem' }}
+              >
+                🔒 Change Password
+              </button>
+              <button
+                onClick={() => setProfileTab('subscription')}
+                className={`btn ${profileTab === 'subscription' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.85rem' }}
+              >
+                💳 Active Subscription
+              </button>
+            </div>
+
+            {/* Tab 1: Edit Profile */}
+            {profileTab === 'profile' && (
+              <form onSubmit={handleSaveProfile}>
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input type="text" className="input-control" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <input type="email" className="input-control" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Profile Avatar URL</label>
+                  <input type="text" className="input-control" value={editAvatar} onChange={(e) => setEditAvatar(e.target.value)} />
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Presets:</span>
+                    {['Prerna', 'Alex', 'Sarah', 'Dev'].map(seed => (
+                      <button
+                        type="button"
+                        key={seed}
+                        onClick={() => setEditAvatar(`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`)}
+                        style={{ padding: '4px 10px', borderRadius: '15px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid var(--border-color)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
+                      >
+                        {seed} Avatar
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setProfileModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary"><Check size={16} /> Save Profile Updates</button>
+                </div>
+              </form>
+            )}
+
+            {/* Tab 2: Change Password */}
+            {profileTab === 'password' && (
+              <form onSubmit={handleChangePassword}>
+                {passwordNotice && (
+                  <div style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: passwordNotice.type === 'success' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+                    border: passwordNotice.type === 'success' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                    color: passwordNotice.type === 'success' ? '#34d399' : '#fca5a5',
+                    fontSize: '0.85rem',
+                    marginBottom: '16px'
+                  }}>
+                    {passwordNotice.text}
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label className="form-label">Current Password *</label>
+                  <input type="password" className="input-control" placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">New Password *</label>
+                  <input type="password" className="input-control" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Confirm New Password *</label>
+                  <input type="password" className="input-control" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setProfileModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary"><Lock size={16} /> Update Password</button>
+                </div>
+              </form>
+            )}
+
+            {/* Tab 3: Active Subscription */}
+            {profileTab === 'subscription' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ background: 'rgba(139, 92, 246, 0.12)', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '20px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span className="badge status-published" style={{ marginBottom: '8px', display: 'inline-block' }}>ACTIVE PLAN</span>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', margin: '4px 0' }}>{userPlan}</h3>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Renews automatically on Aug 25, 2026</div>
+                  </div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#c084fc' }}>₹499</div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#10b981" /> 15 Social Channels Connected</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#10b981" /> Unlimited Gemini AI Content Generation</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#10b981" /> 20s Background Agent Publishing Loop</div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                  <button className="btn btn-secondary" onClick={() => { setProfileModalOpen(false); navigate('/pricing'); }}>
+                    Change Plan / Upgrade <CreditCard size={16} color="#06b6d4" />
+                  </button>
+                  <button className="btn btn-cyan" onClick={() => setProfileModalOpen(false)}>
+                    Close Settings
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* AUTH MODAL */}
       {authModalOpen && (
