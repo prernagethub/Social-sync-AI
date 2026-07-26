@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import {
@@ -113,6 +113,27 @@ export default function App() {
   const [copiedSql, setCopiedSql] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [publishingId, setPublishingId] = useState(null);
+
+  // Click outside ref for notification menu
+  const notificationRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setNotificationOpen(false);
+      }
+    };
+
+    if (notificationOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [notificationOpen]);
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
@@ -809,8 +830,8 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
             {currentUser ? (
               <>
-                {/* NOTIFICATION BELL ICON (VISIBLE ONLY WHEN LOGGED IN!) */}
-                <div style={{ position: 'relative' }}>
+                {/* NOTIFICATION BELL ICON CONTAINER WITH CLICK OUTSIDE REF */}
+                <div ref={notificationRef} style={{ position: 'relative' }}>
                   <button
                     onClick={() => setNotificationOpen(!notificationOpen)}
                     style={{
