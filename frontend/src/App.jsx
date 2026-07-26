@@ -43,7 +43,11 @@ import {
   Zap,
   Users,
   CreditCard,
-  Lock
+  Lock,
+  Layers,
+  Cpu,
+  Share2,
+  Award
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -132,7 +136,7 @@ export default function App() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('socialsync_user');
-    return saved ? JSON.parse(saved) : null; // Default null until user logs in
+    return saved ? JSON.parse(saved) : null;
   });
   const [authMode, setAuthMode] = useState('login');
   const [authEmail, setAuthEmail] = useState('');
@@ -725,7 +729,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* NAVBAR RIGHT CONTROLS: Show Accounts & New Post ONLY when logged in! */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {currentUser ? (
               <>
@@ -761,71 +764,150 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         
-        {/* ROUTE 1: /home */}
+        {/* ROUTE 1: /home (GRAND OVERVIEW HOME LANDING PAGE) */}
         <Route path="/home" element={
           <div>
-            <section style={{ padding: '80px 24px 60px 24px', textAlign: 'center' }}>
-              <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '30px', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#c084fc', fontSize: '0.85rem', fontWeight: '700', marginBottom: '24px' }}>
-                  <Sparkles size={14} /> Multi-Tenant AI Social Publishing Platform
+            {/* HERO BANNER SECTION */}
+            <section style={{ padding: '90px 24px 70px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ maxWidth: '960px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+                
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '30px', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.35)', color: '#c084fc', fontSize: '0.88rem', fontWeight: '700', marginBottom: '28px' }}>
+                  <Sparkles size={16} /> Next-Gen AI Social Media & CrewAI Publishing Platform
                 </div>
 
-                <h1 style={{ fontSize: '3.4rem', fontWeight: '900', lineHeight: 1.15, marginBottom: '20px', background: 'linear-gradient(to right, #ffffff, #c084fc, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  Automate Social Media Strategy with AI & CrewAI Agents
+                <h1 style={{ fontSize: '3.8rem', fontWeight: '900', lineHeight: 1.12, marginBottom: '24px', background: 'linear-gradient(to right, #ffffff, #c084fc, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  Automate Social Media Growth with AI & CrewAI Autonomous Agents
                 </h1>
 
-                <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '740px', margin: '0 auto 36px auto' }}>
-                  Sign in, connect your personal <strong>LinkedIn</strong> & <strong>X (Twitter)</strong> accounts, and let automated background agents publish scheduled content directly to your feeds.
+                <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', lineHeight: 1.65, maxWidth: '780px', margin: '0 auto 40px auto' }}>
+                  Plan content visually, generate viral captions with Google Gemini LLM, predict engagement scores, and let autonomous background agents post live content to <strong>LinkedIn & X</strong> automatically.
                 </p>
 
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
                   {currentUser ? (
-                    <button className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => navigate('/calendar')}>
-                      Open My Content Calendar <ArrowRight size={18} />
+                    <button className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => navigate('/calendar')}>
+                      Open My Content Calendar <ArrowRight size={20} />
                     </button>
                   ) : (
-                    <button className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
-                      <LogIn size={18} /> Sign In to Access Calendar <ArrowRight size={18} />
+                    <button className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
+                      <LogIn size={20} /> Sign In to Access Calendar <ArrowRight size={20} />
                     </button>
                   )}
                   
-                  <button className="btn btn-secondary" style={{ padding: '14px 24px', fontSize: '1rem', borderRadius: '12px' }} onClick={() => navigate('/pricing')}>
-                    View Pricing Plans <CreditCard size={18} color="#06b6d4" />
+                  <button className="btn btn-secondary" style={{ padding: '16px 28px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => navigate('/pricing')}>
+                    View Pricing Plans <CreditCard size={20} color="#06b6d4" />
                   </button>
                 </div>
               </div>
             </section>
 
-            <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 80px 24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #8b5cf6' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                    <CalendarIcon size={26} color="#c084fc" />
+            {/* FULL PLATFORM CAPABILITIES OVERVIEW SECTION */}
+            <section style={{ maxWidth: '1250px', margin: '0 auto', padding: '0 24px 90px 24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>ALL-IN-ONE PLATFORM CAPABILITIES</span>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginTop: '8px' }}>
+                  Everything You Need to Scale Social Media Reach
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginTop: '10px' }}>
+                  A complete full stack suite connecting AI copy engines with live database scheduling and publishing loops.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '28px' }}>
+                
+                {/* Capability 1 */}
+                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #8b5cf6' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
+                    <CalendarIcon size={28} color="#c084fc" />
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Interactive Visual Date Calendar</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                    Once logged in, view your complete monthly content plan grid showing exactly which posts are scheduled on every specific date.
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>📅 Visual 7x5 Monthly Calendar Grid</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
+                    View your full monthly content schedule at a glance. Every scheduled post is displayed on its exact calendar date box with channel icons and status badges.
                   </p>
+                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Click-to-schedule `+` on any date</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Multi-channel platform filtering</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Month & Cards View modes</li>
+                  </ul>
                 </div>
 
-                <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #06b6d4' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                    <Bot size={26} color="#22d3ee" />
+                {/* Capability 2 */}
+                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #06b6d4' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(6, 182, 212, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
+                    <Bot size={28} color="#22d3ee" />
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>CrewAI Background Publishing</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                    Automated background agents monitor your scheduled dates and post directly to your personal LinkedIn & X accounts.
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>⚡ Autonomous CrewAI Background Agent</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
+                    Our Python background publishing loop continuously checks Supabase every 20 seconds for due posts and publishes them live to LinkedIn & X feeds automatically.
                   </p>
+                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> 100% Automated Background Execution</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Real-Time Status Update to `🚀 Published`</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Zero Manual Intervention Needed</li>
+                  </ul>
                 </div>
 
-                <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #10b981' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                    <Shield size={26} color="#34d399" />
+                {/* Capability 3 */}
+                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #10b981' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
+                    <Wand2 size={28} color="#34d399" />
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>Secure Auth Protection</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                    Protected user access control ensures unauthenticated visitors cannot view or edit your social media plans without signing in.
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🤖 4-in-1 AI Content Generation Studio</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
+                    Generate post ideas, viral hooks, platform-tailored copy, hashtag research, and predictive engagement scores powered by Google Gemini LLM.
                   </p>
+                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Niche Post Ideas & Viral Hook Generator</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Predictive Engagement Analyzer (0-100%)</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Hashtag Volume & Competition Finder</li>
+                  </ul>
+                </div>
+
+                {/* Capability 4 */}
+                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #f59e0b' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
+                    <Shield size={28} color="#fbbf24" />
+                  </div>
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🔒 Auth Protection & Multi-User Accounts</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
+                    Protected user access control ensures unauthenticated visitors cannot view or edit your social media plans without logging in.
+                  </p>
+                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> 1-Click Instant Demo Sign In</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Personal LinkedIn OAuth Token Connection</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Persistent User Session Storage</li>
+                  </ul>
+                </div>
+
+              </div>
+            </section>
+
+            {/* HOW IT WORKS SECTION */}
+            <section style={{ maxWidth: '1100px', margin: '0 auto 90px auto', padding: '0 24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>3 SIMPLE STEPS</span>
+                <h2 style={{ fontSize: '2.2rem', fontWeight: '800', marginTop: '6px' }}>
+                  How SocialSync AI Works
+                </h2>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                <div className="glass-panel" style={{ padding: '28px', borderRadius: '18px', textAlign: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#8b5cf6', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', fontSize: '1.2rem' }}>1</div>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Sign In & Connect Accounts</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Log in to your workspace and paste your personal LinkedIn OAuth access token under Accounts.</p>
+                </div>
+
+                <div className="glass-panel" style={{ padding: '28px', borderRadius: '18px', textAlign: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#06b6d4', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', fontSize: '1.2rem' }}>2</div>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Generate & Schedule Posts</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Use Gemini AI to write captions & pick a target date/time on the 7x5 Monthly Visual Grid.</p>
+                </div>
+
+                <div className="glass-panel" style={{ padding: '28px', borderRadius: '18px', textAlign: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#10b981', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', fontSize: '1.2rem' }}>3</div>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Auto-Publish Live</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>When the scheduled time arrives, the background CrewAI agent posts live to your feed!</p>
                 </div>
               </div>
             </section>
