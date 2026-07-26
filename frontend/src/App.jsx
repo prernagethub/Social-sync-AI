@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -205,7 +207,7 @@ export default function App() {
     }
   }, [currentUser, profileModalOpen]);
 
-  // Save Profile Handler
+  // Save Profile Handler (Toastify 2s Notification)
   const handleSaveProfile = (e) => {
     e.preventDefault();
     const updated = {
@@ -217,21 +219,21 @@ export default function App() {
     setCurrentUser(updated);
     localStorage.setItem('socialsync_user', JSON.stringify(updated));
     try { confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } }); } catch (err) {}
-    alert('Profile updated successfully! ✨');
+    toast.success('Profile updated successfully! ✨', { autoClose: 2000 });
   };
 
-  // Save Password Handler
+  // Save Password Handler (Toastify 2s Notification)
   const handleChangePassword = (e) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      setPasswordNotice({ type: 'error', text: 'New password must be at least 6 characters.' });
+      toast.error('New password must be at least 6 characters.', { autoClose: 2000 });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordNotice({ type: 'error', text: 'New password and confirm password do not match.' });
+      toast.error('Passwords do not match.', { autoClose: 2000 });
       return;
     }
-    setPasswordNotice({ type: 'success', text: 'Password changed successfully! 🔒' });
+    toast.success('Password changed successfully! 🔒', { autoClose: 2000 });
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -369,7 +371,7 @@ export default function App() {
 
   const notificationsList = getNotifications();
 
-  // Auth Handlers
+  // Auth Handlers with Toastify 2s Notifications
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     const newUser = {
@@ -381,6 +383,7 @@ export default function App() {
     setCurrentUser(newUser);
     localStorage.setItem('socialsync_user', JSON.stringify(newUser));
     setAuthModalOpen(false);
+    toast.success(`Welcome back, ${newUser.name}! 👋`, { autoClose: 2000 });
     navigate('/calendar');
     try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }); } catch (err) {}
   };
@@ -391,6 +394,7 @@ export default function App() {
     localStorage.removeItem('socialsync_last_path');
     setNotificationOpen(false);
     setProfileModalOpen(false);
+    toast.info('Signed out successfully! 👋', { autoClose: 2000 });
     navigate('/home');
   };
 
@@ -418,9 +422,10 @@ export default function App() {
     try {
       await triggerLinkedInPublisherAgent();
       try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
+      toast.success('Live LinkedIn Agent post published! 🚀', { autoClose: 2000 });
       await fetchPosts(false);
     } catch (err) {
-      alert(`LinkedIn Publish Error: ${err.message}`);
+      toast.error(`LinkedIn Publish Error: ${err.message}`, { autoClose: 2000 });
     } finally {
       setPublishingId(null);
     }
@@ -441,6 +446,7 @@ export default function App() {
   const handleCopySql = () => {
     navigator.clipboard.writeText(SQL_SCHEMA_SCRIPT);
     setCopiedSql(true);
+    toast.success('SQL Query copied to clipboard! 📋', { autoClose: 2000 });
     setTimeout(() => setCopiedSql(false), 2000);
   };
 
@@ -477,11 +483,13 @@ export default function App() {
           .update(payload)
           .eq('id', editingPost.id);
         if (updateErr) throw updateErr;
+        toast.success('Post updated successfully! 📝', { autoClose: 2000 });
       } else {
         const { error: insertErr } = await supabase
           .from('content_calendar')
           .insert([payload]);
         if (insertErr) throw insertErr;
+        toast.success('New post scheduled successfully! 📅', { autoClose: 2000 });
       }
 
       if (platform === 'linkedin') {
@@ -503,13 +511,14 @@ export default function App() {
           await fetchPosts(false);
           closeModal();
           setSqlModalOpen(true);
+          toast.info('Post saved! Run SQL query for image support.', { autoClose: 2000 });
           return;
         } catch (fallbackErr) {
-          alert(`Supabase Error: ${fallbackErr.message}`);
+          toast.error(`Supabase Error: ${fallbackErr.message}`, { autoClose: 2000 });
           return;
         }
       }
-      alert(`Supabase Error: ${err.message}`);
+      toast.error(`Supabase Error: ${err.message}`, { autoClose: 2000 });
     }
   };
 
@@ -524,9 +533,10 @@ export default function App() {
         .eq('id', id);
 
       if (deleteErr) throw deleteErr;
+      toast.warn('Post deleted from Supabase. 🗑️', { autoClose: 2000 });
       await fetchPosts(false);
     } catch (err) {
-      alert(`Supabase Delete Error: ${err.message}`);
+      toast.error(`Supabase Delete Error: ${err.message}`, { autoClose: 2000 });
     }
   };
 
@@ -568,6 +578,7 @@ export default function App() {
     try {
       const res = await generatePostIdeas({ niche: aiNiche });
       setAiIdeas(res || []);
+      toast.success('AI Post Ideas generated! 💡', { autoClose: 2000 });
     } finally {
       setGeneratingIdeas(false);
     }
@@ -578,6 +589,7 @@ export default function App() {
     try {
       const res = await generateCaption({ topic: captionTopic || 'Modern AI Automation', platform: captionPlatform });
       setGeneratedCaptionResult(res);
+      toast.success('Platform-tailored copy written by Gemini! ✍️', { autoClose: 2000 });
     } finally {
       setGeneratingCaptionState(false);
     }
@@ -588,6 +600,7 @@ export default function App() {
     try {
       const res = await researchHashtags(hashtagTopic);
       setHashtagResults(res);
+      toast.success('Hashtag volume research ready! 🏷️', { autoClose: 2000 });
     } finally {
       setResearchingTags(false);
     }
@@ -596,6 +609,7 @@ export default function App() {
   const handleRunPrediction = () => {
     const res = predictEngagement({ caption: predictCaption, platform: 'linkedin' });
     setPredictionResult(res);
+    toast.info('Engagement score calculated! 📊', { autoClose: 2000 });
   };
 
   const filteredPosts = posts.filter(p => filterPlatform === 'all' || p.platform === filterPlatform);
@@ -1034,6 +1048,20 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'var(--bg-dark)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
+      {/* GLOBAL TOASTIFY NOTIFICATION CONTAINER (2 SECOND AUTO-CLOSE) */}
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+
       <div>
         {/* NAVBAR */}
         <nav style={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100, padding: '12px 24px' }}>
@@ -1977,20 +2005,6 @@ export default function App() {
             {/* Tab 2: Change Password */}
             {profileTab === 'password' && (
               <form onSubmit={handleChangePassword}>
-                {passwordNotice && (
-                  <div style={{
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: passwordNotice.type === 'success' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.18)',
-                    border: passwordNotice.type === 'success' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
-                    color: passwordNotice.type === 'success' ? '#34d399' : '#fca5a5',
-                    fontSize: '0.85rem',
-                    marginBottom: '16px'
-                  }}>
-                    {passwordNotice.text}
-                  </div>
-                )}
-
                 <div className="form-group">
                   <label className="form-label">Current Password *</label>
                   <input type="password" className="input-control" placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
@@ -2147,7 +2161,7 @@ export default function App() {
               <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSettingsModalOpen(false)}><X size={20} /></button>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); setSettingsModalOpen(false); }}>
+            <form onSubmit={(e) => { e.preventDefault(); setSettingsModalOpen(false); toast.success('Social accounts updated! 🔑', { autoClose: 2000 }); }}>
               <div className="form-group">
                 <label className="form-label">LinkedIn OAuth Access Token</label>
                 <textarea className="textarea-control" rows={3} value={userLinkedinToken} onChange={(e) => setUserLinkedinToken(e.target.value)} placeholder="Paste personal LinkedIn token..." />
