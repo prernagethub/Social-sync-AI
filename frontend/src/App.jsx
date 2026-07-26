@@ -47,7 +47,7 @@ import {
   CreditCard,
   Lock,
   Bell,
-  Image as ImageIcon,
+  ImageIcon,
   UploadCloud,
   CheckSquare,
   Activity,
@@ -88,6 +88,14 @@ import {
   researchHashtags,
   predictEngagement
 } from './services/aiEngine';
+
+// Import Modular Modal Components
+import AuthModal from './components/modals/AuthModal';
+import ProfileModal from './components/modals/ProfileModal';
+import PostModal from './components/modals/PostModal';
+import ShareModal from './components/modals/ShareModal';
+import SettingsModal from './components/modals/SettingsModal';
+import SqlModal from './components/modals/SqlModal';
 
 const SQL_SCHEMA_SCRIPT = `ALTER TABLE content_calendar ADD COLUMN IF NOT EXISTS image_url TEXT;`;
 
@@ -2164,409 +2172,89 @@ export default function App() {
         </div>
       </footer>
 
-      {/* SHARE CLIENT LINK MODAL */}
-      {shareModalOpen && (
-        <div className="modal-overlay" onClick={() => setShareModalOpen(false)}>
-          <div className="modal-container" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Share2 size={22} color="#06b6d4" />
-                <h2 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Shareable Client Link</h2>
-              </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setShareModalOpen(false)}><X size={20} /></button>
-            </div>
+      {/* MODULAR MODAL COMPONENTS */}
+      <AuthModal
+        authModalOpen={authModalOpen}
+        setAuthModalOpen={setAuthModalOpen}
+        authMode={authMode}
+        authEmail={authEmail}
+        setAuthEmail={setAuthEmail}
+        authPassword={authPassword}
+        setAuthPassword={setAuthPassword}
+        authName={authName}
+        setAuthName={setAuthName}
+        handleAuthSubmit={handleAuthSubmit}
+      />
 
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
-              Share this live read-only link with your clients or stakeholders to let them view your scheduled content calendar without signing in:
-            </p>
+      <ProfileModal
+        profileModalOpen={profileModalOpen}
+        setProfileModalOpen={setProfileModalOpen}
+        currentUser={currentUser}
+        profileTab={profileTab}
+        setProfileTab={setProfileTab}
+        editName={editName}
+        setEditName={setEditName}
+        editEmail={editEmail}
+        setEditEmail={setEditEmail}
+        editAvatar={editAvatar}
+        setEditAvatar={setEditAvatar}
+        handleSaveProfile={handleSaveProfile}
+        currentPassword={currentPassword}
+        setCurrentPassword={setCurrentPassword}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        handleChangePassword={handleChangePassword}
+        userPlan={userPlan}
+        navigate={navigate}
+      />
 
-            <div style={{ background: 'rgba(0,0,0,0.5)', padding: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
-              <input
-                type="text"
-                readOnly
-                className="input-control"
-                value={`${window.location.origin}/share/calendar`}
-                style={{ fontSize: '0.85rem', flex: 1, color: '#38bdf8' }}
-              />
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/share/calendar`);
-                  toast.success('Public share link copied to clipboard! 📋', { autoClose: 2000 });
-                }}
-              >
-                <Copy size={14} /> Copy Link
-              </button>
-            </div>
+      <PostModal
+        modalOpen={modalOpen}
+        closeModal={closeModal}
+        editingPost={editingPost}
+        handleApplyAiBestTime={handleApplyAiBestTime}
+        handleSavePost={handleSavePost}
+        title={title}
+        setTitle={setTitle}
+        platform={platform}
+        setPlatform={setPlatform}
+        status={status}
+        setStatus={setStatus}
+        scheduledDate={scheduledDate}
+        setScheduledDate={setScheduledDate}
+        scheduledTime={scheduledTime}
+        setScheduledTime={setScheduledTime}
+        caption={caption}
+        setCaption={setCaption}
+        handleImageFileChange={handleImageFileChange}
+        imageUrl={imageUrl}
+        setImageUrl={setImageUrl}
+        imagePreview={imagePreview}
+        setImagePreview={setImagePreview}
+      />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => { window.open('/share/calendar', '_blank'); }}>
-                <Eye size={14} /> Open Live Preview
-              </button>
-              <button className="btn btn-cyan btn-sm" onClick={() => setShareModalOpen(false)}>Done</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ShareModal
+        shareModalOpen={shareModalOpen}
+        setShareModalOpen={setShareModalOpen}
+      />
 
-      {/* USER PROFILE & ACCOUNT SETTINGS MODAL */}
-      {profileModalOpen && (
-        <div className="modal-overlay" onClick={() => setProfileModalOpen(false)}>
-          <div className="modal-container" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
-            
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <img src={currentUser?.avatar} alt="Avatar" style={{ width: '42px', height: '42px', borderRadius: '50%', border: '2px solid #8b5cf6' }} />
-                <div>
-                  <h2 style={{ fontSize: '1.3rem', fontWeight: '800', margin: 0, color: '#fff' }}>Account & Profile Settings</h2>
-                  <div style={{ fontSize: '0.8rem', color: '#06b6d4' }}>{currentUser?.email}</div>
-                </div>
-              </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setProfileModalOpen(false)}><X size={20} /></button>
-            </div>
+      <SettingsModal
+        settingsModalOpen={settingsModalOpen}
+        setSettingsModalOpen={setSettingsModalOpen}
+        userLinkedinToken={userLinkedinToken}
+        setUserLinkedinToken={setUserLinkedinToken}
+        toast={toast}
+      />
 
-            {/* Modal Nav Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', overflowX: 'auto' }}>
-              <button
-                onClick={() => setProfileTab('profile')}
-                className={`btn ${profileTab === 'profile' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: '0.85rem' }}
-              >
-                👤 Edit Profile
-              </button>
-              <button
-                onClick={() => setProfileTab('password')}
-                className={`btn ${profileTab === 'password' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: '0.85rem' }}
-              >
-                🔒 Change Password
-              </button>
-              <button
-                onClick={() => setProfileTab('subscription')}
-                className={`btn ${profileTab === 'subscription' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: '0.85rem' }}
-              >
-                💳 Active Subscription
-              </button>
-            </div>
-
-            {/* Tab 1: Edit Profile */}
-            {profileTab === 'profile' && (
-              <form onSubmit={handleSaveProfile}>
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input type="text" className="input-control" value={editName} onChange={(e) => setEditName(e.target.value)} required />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email Address</label>
-                  <input type="email" className="input-control" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Profile Avatar URL</label>
-                  <input type="text" className="input-control" value={editAvatar} onChange={(e) => setEditAvatar(e.target.value)} />
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Presets:</span>
-                    {['Prerna', 'Alex', 'Sarah', 'Dev'].map(seed => (
-                      <button
-                        type="button"
-                        key={seed}
-                        onClick={() => setEditAvatar(`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`)}
-                        style={{ padding: '4px 10px', borderRadius: '15px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid var(--border-color)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
-                      >
-                        {seed} Avatar
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setProfileModalOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary"><Check size={16} /> Save Profile Updates</button>
-                </div>
-              </form>
-            )}
-
-            {/* Tab 2: Change Password */}
-            {profileTab === 'password' && (
-              <form onSubmit={handleChangePassword}>
-                <div className="form-group">
-                  <label className="form-label">Current Password *</label>
-                  <input type="password" className="input-control" placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">New Password *</label>
-                  <input type="password" className="input-control" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Confirm New Password *</label>
-                  <input type="password" className="input-control" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setProfileModalOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary"><Lock size={16} /> Update Password</button>
-                </div>
-              </form>
-            )}
-
-            {/* Tab 3: Active Subscription */}
-            {profileTab === 'subscription' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ background: 'rgba(139, 92, 246, 0.12)', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '20px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span className="badge status-published" style={{ marginBottom: '8px', display: 'inline-block' }}>ACTIVE PLAN</span>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', margin: '4px 0' }}>{userPlan}</h3>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Renews automatically on Aug 25, 2026</div>
-                  </div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#c084fc' }}>₹499</div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#10b981" /> 15 Social Channels Connected</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#10b981" /> Unlimited Gemini AI Content Generation</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#10b981" /> 20s Background Agent Publishing Loop</div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                  <button className="btn btn-secondary" onClick={() => { setProfileModalOpen(false); navigate('/pricing'); }}>
-                    Change Plan / Upgrade <CreditCard size={16} color="#06b6d4" />
-                  </button>
-                  <button className="btn btn-cyan" onClick={() => setProfileModalOpen(false)}>
-                    Close Settings
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
-
-      {/* AUTH MODAL */}
-      {authModalOpen && (
-        <div className="modal-overlay" onClick={() => setAuthModalOpen(false)}>
-          <div className="modal-container" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Shield size={22} color="#8b5cf6" />
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '800' }}>
-                  {authMode === 'login' ? 'Sign In to SocialSync' : 'Create Account'}
-                </h2>
-              </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setAuthModalOpen(false)}><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleAuthSubmit}>
-              {authMode === 'signup' && (
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input type="text" className="input-control" placeholder="e.g. Alex Morgan" value={authName} onChange={(e) => setAuthName(e.target.value)} required />
-                </div>
-              )}
-
-              <div className="form-group">
-                <label className="form-label">Email Address *</label>
-                <input type="email" className="input-control" placeholder="alex@company.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Password *</label>
-                <input type="password" className="input-control" placeholder="••••••••" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }}>
-                <LogIn size={16} /> {authMode === 'login' ? 'Sign In & View My Calendar' : 'Create Free Account'}
-              </button>
-            </form>
-
-            <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '20px', paddingTop: '16px', textAlign: 'center' }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => {
-                  setAuthEmail('rajputprerna03@gmail.com');
-                  setAuthName('Prerna Rajput');
-                  handleAuthSubmit({ preventDefault: () => {} });
-                }}
-              >
-                ⚡ 1-Click Instant Demo Login
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SQL SCHEMA COLUMN ASSISTANT MODAL */}
-      {sqlModalOpen && (
-        <div className="modal-overlay" onClick={() => setSqlModalOpen(false)}>
-          <div className="modal-container" style={{ maxWidth: '580px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Database size={22} color="#8b5cf6" />
-                <h2 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Supabase SQL Schema Helper</h2>
-              </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSqlModalOpen(false)}><X size={20} /></button>
-            </div>
-
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
-              Your post title & copy saved successfully! To enable persistent image URLs in your Supabase cloud PostgreSQL, copy and run this 1-line SQL query in your Supabase SQL Editor:
-            </p>
-
-            <div style={{ background: 'rgba(0,0,0,0.5)', padding: '14px', borderRadius: '10px', position: 'relative', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
-              <pre style={{ color: '#38bdf8', fontSize: '0.85rem', fontFamily: 'monospace', margin: 0, whiteSpace: 'pre-wrap' }}>{SQL_SCHEMA_SCRIPT}</pre>
-              <button
-                onClick={handleCopySql}
-                className="btn btn-secondary btn-sm"
-                style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.75rem', padding: '4px 8px' }}
-              >
-                {copiedSql ? <Check size={14} color="#34d399" /> : <Copy size={14} />} {copiedSql ? 'Copied!' : 'Copy SQL'}
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="btn btn-primary btn-sm" onClick={() => setSqlModalOpen(false)}>Got It, Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CONNECT ACCOUNTS MODAL */}
-      {settingsModalOpen && (
-        <div className="modal-overlay" onClick={() => setSettingsModalOpen(false)}>
-          <div className="modal-container" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Key size={22} color="#06b6d4" />
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '800' }}>Connect Social Media Accounts</h2>
-              </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setSettingsModalOpen(false)}><X size={20} /></button>
-            </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); setSettingsModalOpen(false); toast.success('Social accounts updated! 🔑', { autoClose: 2000 }); }}>
-              <div className="form-group">
-                <label className="form-label">LinkedIn OAuth Access Token</label>
-                <textarea className="textarea-control" rows={3} value={userLinkedinToken} onChange={(e) => setUserLinkedinToken(e.target.value)} placeholder="Paste personal LinkedIn token..." />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setSettingsModalOpen(false)}>Close</button>
-                <button type="submit" className="btn btn-primary">Save Accounts</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* SCHEDULE POST MODAL (WITH PHOTO / IMAGE UPLOAD & PREVIEW + AI OPTIMAL TIME) */}
-      {modalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-container" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '800', margin: 0 }}>{editingPost ? 'Edit Scheduled Post' : 'Schedule New Post'}</h2>
-                <button
-                  type="button"
-                  onClick={handleApplyAiBestTime}
-                  style={{ padding: '4px 10px', borderRadius: '15px', background: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.5)', color: '#c084fc', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <Clock size={12} /> 💡 Auto-Fill AI Best Time
-                </button>
-              </div>
-              <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={closeModal}><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleSavePost}>
-              <div className="form-group">
-                <label className="form-label">Post Title *</label>
-                <input type="text" className="input-control" placeholder="Post title..." value={title} onChange={(e) => setTitle(e.target.value)} required />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Target Platform</label>
-                  <select className="select-control" value={platform} onChange={(e) => setPlatform(e.target.value)}>
-                    <option value="linkedin">💼 LinkedIn</option>
-                    <option value="twitter">🐦 X / Twitter</option>
-                    <option value="instagram">📸 Instagram</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Post Status</label>
-                  <select className="select-control" value={status} onChange={(e) => setStatus(e.target.value)}>
-                    <option value="draft">📝 Draft</option>
-                    <option value="scheduled">📅 Scheduled</option>
-                    <option value="published">🚀 Published</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Scheduled Date *</label>
-                  <input type="date" className="input-control" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} required />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Scheduled Time *</label>
-                  <input type="time" className="input-control" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} required />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginTop: '14px' }}>
-                <label className="form-label">Caption Copy</label>
-                <textarea className="textarea-control" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write caption..." />
-              </div>
-
-              {/* PHOTO / IMAGE UPLOAD & LINK INPUT */}
-              <div className="form-group" style={{ marginTop: '14px' }}>
-                <label className="form-label">Attach Photo / Media Image</label>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '10px' }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageFileChange}
-                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>OR</span>
-                  <input
-                    type="url"
-                    className="input-control"
-                    placeholder="Paste image URL..."
-                    value={imageUrl}
-                    onChange={(e) => {
-                      setImageUrl(e.target.value);
-                      setImagePreview(e.target.value);
-                    }}
-                    style={{ flex: 1 }}
-                  />
-                </div>
-
-                {imagePreview && (
-                  <div style={{ marginTop: '10px', position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)', maxHeight: '160px' }}>
-                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
-                    <button
-                      type="button"
-                      style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      onClick={() => { setImageUrl(''); setImagePreview(''); }}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
-                <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary"><Check size={18} /> {editingPost ? 'Update Post' : 'Schedule & Save Post'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <SqlModal
+        sqlModalOpen={sqlModalOpen}
+        setSqlModalOpen={setSqlModalOpen}
+        SQL_SCHEMA_SCRIPT={SQL_SCHEMA_SCRIPT}
+        handleCopySql={handleCopySql}
+        copiedSql={copiedSql}
+      />
 
     </div>
   );
