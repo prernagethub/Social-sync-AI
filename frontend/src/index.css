@@ -294,3 +294,75 @@ h1, h2, h3, h4, h5, h6 {
 .pulse-glow {
   animation: pulseGlow 3s infinite ease-in-out;
 }
+
+/* ========================================== */
+/* RESPONSIVE MEDIA QUERIES (MOBILE & TABLET) */
+/* ========================================== */
+@media (max-width: 1024px) {
+  h1 {
+    font-size: 2.8rem !important;
+  }
+  .modal-container {
+    max-width: 95% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Navigation */
+  nav {
+    padding: 10px 14px !important;
+  }
+  nav > div {
+    gap: 10px !important;
+  }
+  
+  /* Hero & Headings */
+  h1 {
+    font-size: 2.2rem !important;
+    line-height: 1.2 !important;
+  }
+  h2 {
+    font-size: 1.8rem !important;
+  }
+
+  /* Buttons & Flex Controls */
+  .btn-lg {
+    padding: 12px 20px !important;
+    font-size: 0.95rem !important;
+  }
+  
+  /* Calendar Month Grid Horizontal Touch Scroll */
+  .calendar-month-scroll {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px;
+  }
+  
+  /* Form Grids */
+  div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    padding: 10px !important;
+  }
+  .modal-container {
+    padding: 16px !important;
+    max-height: 95vh !important;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.8rem !important;
+  }
+  .badge {
+    font-size: 0.68rem !important;
+  }
+  .btn {
+    font-size: 0.8rem !important;
+    padding: 8px 12px !important;
+  }
+}
+
