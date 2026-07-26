@@ -132,7 +132,7 @@ export default function App() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('socialsync_user');
-    return saved ? JSON.parse(saved) : null; // Start null if not signed in
+    return saved ? JSON.parse(saved) : null; // Default null until user logs in
   });
   const [authMode, setAuthMode] = useState('login');
   const [authEmail, setAuthEmail] = useState('');
@@ -725,31 +725,34 @@ export default function App() {
             </button>
           </div>
 
+          {/* NAVBAR RIGHT CONTROLS: Show Accounts & New Post ONLY when logged in! */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => { if (requireAuth()) setSettingsModalOpen(true); }}>
-              <Settings size={15} color="#06b6d4" /> Accounts
-            </button>
-
             {currentUser ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(30, 41, 59, 0.7)', padding: '4px 12px 4px 6px', borderRadius: '30px', border: '1px solid var(--border-color)' }}>
-                <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #8b5cf6' }} />
-                <div style={{ fontSize: '0.8rem', lineHeight: 1.2 }}>
-                  <div style={{ fontWeight: '700', color: '#fff' }}>{currentUser.name}</div>
-                  <div style={{ color: '#06b6d4', fontSize: '0.7rem' }}>{currentUser.role}</div>
-                </div>
-                <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }} title="Sign Out">
-                  <LogOut size={15} />
+              <>
+                <button className="btn btn-secondary btn-sm" onClick={() => setSettingsModalOpen(true)}>
+                  <Settings size={15} color="#06b6d4" /> Accounts
                 </button>
-              </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(30, 41, 59, 0.7)', padding: '4px 12px 4px 6px', borderRadius: '30px', border: '1px solid var(--border-color)' }}>
+                  <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid #8b5cf6' }} />
+                  <div style={{ fontSize: '0.8rem', lineHeight: 1.2 }}>
+                    <div style={{ fontWeight: '700', color: '#fff' }}>{currentUser.name}</div>
+                    <div style={{ color: '#06b6d4', fontSize: '0.7rem' }}>{currentUser.role}</div>
+                  </div>
+                  <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }} title="Sign Out">
+                    <LogOut size={15} />
+                  </button>
+                </div>
+
+                <button className="btn btn-primary btn-sm" onClick={() => openModal()}>
+                  <Plus size={16} /> New Post
+                </button>
+              </>
             ) : (
               <button className="btn btn-cyan btn-sm" onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
                 <LogIn size={15} /> Sign In
               </button>
             )}
-
-            <button className="btn btn-primary btn-sm" onClick={() => openModal()}>
-              <Plus size={16} /> New Post
-            </button>
           </div>
         </div>
       </nav>
@@ -758,7 +761,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         
-        {/* ROUTE 1: /home (OVERVIEW HOME LANDING PAGE) */}
+        {/* ROUTE 1: /home */}
         <Route path="/home" element={
           <div>
             <section style={{ padding: '80px 24px 60px 24px', textAlign: 'center' }}>
@@ -793,7 +796,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Platform Feature Overview */}
             <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 80px 24px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
                 <div className="glass-panel" style={{ padding: '30px', borderRadius: '20px', borderTop: '4px solid #8b5cf6' }}>
@@ -830,7 +832,7 @@ export default function App() {
           </div>
         } />
 
-        {/* ROUTE 2: /calendar (AUTH PROTECTED CONTENT CALENDAR) */}
+        {/* ROUTE 2: /calendar */}
         <Route path="/calendar" element={
           !currentUser ? (
             <div style={{ maxWidth: '600px', margin: '80px auto', padding: '40px', textAlign: 'center' }} className="glass-panel">
