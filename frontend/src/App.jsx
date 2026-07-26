@@ -275,6 +275,7 @@ export default function App() {
     setCurrentUser(null);
     localStorage.removeItem('socialsync_user');
     localStorage.removeItem('socialsync_last_path');
+    setNotificationOpen(false);
     navigate('/home');
   };
 
@@ -806,103 +807,102 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
-            
-            {/* NOTIFICATION BELL ICON */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setNotificationOpen(!notificationOpen)}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.7)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '50%',
-                  width: '38px',
-                  height: '38px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  position: 'relative'
-                }}
-                title="Notifications"
-              >
-                <Bell size={18} color="#c084fc" />
-                {notificationsList.length > 0 && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '-2px',
-                    right: '-2px',
-                    background: '#ef4444',
-                    color: '#fff',
-                    fontSize: '0.65rem',
-                    fontWeight: '900',
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px solid #0f172a'
-                  }}>
-                    {notificationsList.length}
-                  </span>
-                )}
-              </button>
+            {currentUser ? (
+              <>
+                {/* NOTIFICATION BELL ICON (VISIBLE ONLY WHEN LOGGED IN!) */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setNotificationOpen(!notificationOpen)}
+                    style={{
+                      background: 'rgba(30, 41, 59, 0.7)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '50%',
+                      width: '38px',
+                      height: '38px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                    title="Notifications"
+                  >
+                    <Bell size={18} color="#c084fc" />
+                    {notificationsList.length > 0 && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '-2px',
+                        right: '-2px',
+                        background: '#ef4444',
+                        color: '#fff',
+                        fontSize: '0.65rem',
+                        fontWeight: '900',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid #0f172a'
+                      }}>
+                        {notificationsList.length}
+                      </span>
+                    )}
+                  </button>
 
-              {/* NOTIFICATION DROPDOWN POPUP */}
-              {notificationOpen && (
-                <div className="glass-panel" style={{
-                  position: 'absolute',
-                  top: '48px',
-                  right: 0,
-                  width: '340px',
-                  maxHeight: '400px',
-                  overflowY: 'auto',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  zIndex: 200,
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-                  border: '1px solid var(--border-color)',
-                  background: 'rgba(15, 23, 42, 0.96)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '0.95rem' }}>
-                      <Bell size={16} color="#8b5cf6" /> Notifications ({notificationsList.length})
-                    </div>
-                    <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setNotificationOpen(false)}><X size={16} /></button>
-                  </div>
-
-                  {notificationsList.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      No new notifications right now.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {notificationsList.map((n) => (
-                        <div key={n.id} style={{
-                          padding: '10px 12px',
-                          borderRadius: '10px',
-                          background: 'rgba(30, 41, 59, 0.6)',
-                          borderLeft: n.type === 'scheduled' ? '3px solid #8b5cf6' : n.type === 'draft' ? '3px solid #f59e0b' : '3px solid #10b981',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#fff' }}>{n.icon} {n.title}</span>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{n.time}</span>
-                          </div>
-                          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{n.desc}</p>
+                  {/* NOTIFICATION DROPDOWN POPUP */}
+                  {notificationOpen && (
+                    <div className="glass-panel" style={{
+                      position: 'absolute',
+                      top: '48px',
+                      right: 0,
+                      width: '340px',
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      zIndex: 200,
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                      border: '1px solid var(--border-color)',
+                      background: 'rgba(15, 23, 42, 0.96)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '0.95rem' }}>
+                          <Bell size={16} color="#8b5cf6" /> Notifications ({notificationsList.length})
                         </div>
-                      ))}
+                        <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setNotificationOpen(false)}><X size={16} /></button>
+                      </div>
+
+                      {notificationsList.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                          No new notifications right now.
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {notificationsList.map((n) => (
+                            <div key={n.id} style={{
+                              padding: '10px 12px',
+                              borderRadius: '10px',
+                              background: 'rgba(30, 41, 59, 0.6)',
+                              borderLeft: n.type === 'scheduled' ? '3px solid #8b5cf6' : n.type === 'draft' ? '3px solid #f59e0b' : '3px solid #10b981',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#fff' }}>{n.icon} {n.title}</span>
+                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{n.time}</span>
+                              </div>
+                              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{n.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {currentUser ? (
-              <>
                 <button className="btn btn-secondary btn-sm" onClick={() => setSettingsModalOpen(true)}>
                   <Settings size={15} color="#06b6d4" /> Accounts
                 </button>
@@ -937,10 +937,9 @@ export default function App() {
           currentUser ? <Navigate to="/calendar" replace /> : <Navigate to="/home" replace />
         } />
         
-        {/* ROUTE 1: /home (GRAND FULL APPLICATION OVERVIEW PAGE WITH EMBEDDED PRICING AT THE END) */}
+        {/* ROUTE 1: /home */}
         <Route path="/home" element={
           <div>
-            {/* HERO BANNER SECTION */}
             <section style={{ padding: '95px 24px 75px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
               <div style={{ maxWidth: '980px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
                 
@@ -975,7 +974,6 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* METRICS & COUNTER STATS BAR */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', background: 'rgba(15, 23, 42, 0.8)', padding: '24px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
                   <div>
                     <div style={{ fontSize: '2.2rem', fontWeight: '900', color: '#c084fc' }}>10x</div>
@@ -998,145 +996,37 @@ export default function App() {
               </div>
             </section>
 
-            {/* FULL APPLICATION OVERVIEW CAPABILITIES SECTION */}
             <section style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px 90px 24px' }}>
               <div style={{ textAlign: 'center', marginBottom: '60px' }}>
                 <span className="badge badge-glow" style={{ marginBottom: '12px' }}>ALL-IN-ONE PLATFORM CAPABILITIES</span>
                 <h2 style={{ fontSize: '2.6rem', fontWeight: '800', marginTop: '8px' }}>
                   What SocialSync AI Can Do For Your Brand
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginTop: '10px' }}>
-                  Explore all core features engineered to automate your end-to-end content workflow.
-                </p>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '28px' }}>
-                
-                {/* Capability 1: Month Visual Calendar Grid */}
                 <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #8b5cf6' }}>
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
                     <CalendarIcon size={28} color="#c084fc" />
                   </div>
                   <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>📅 1. Visual 7x5 Monthly Calendar Grid</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    View your complete content calendar showing exact dates, post titles, media photo thumbnails, status badges (`📝 Draft`, `📅 Scheduled`, `🚀 Published`), and multi-channel filtering.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Click-to-schedule `+` icon on any specific date</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Cards / Kanban & Month Grid view toggles</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Filter by LinkedIn, Twitter, IG, TikTok, Facebook</li>
-                  </ul>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>View your complete content calendar showing exact dates, post titles, media photo thumbnails, and channel filters.</p>
                 </div>
 
-                {/* Capability 2: CrewAI Autonomous Background Agent */}
                 <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #06b6d4' }}>
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(6, 182, 212, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
                     <Bot size={28} color="#22d3ee" />
                   </div>
                   <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>⚡ 2. CrewAI Background Publishing Agent</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Our Python CrewAI agent runs continuously in the background, checking Supabase every 20 seconds for due scheduled posts and publishing them live to LinkedIn & X feeds automatically.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> 100% Hands-Free Autonomous Background Posting</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Real-time status sync to `🚀 Published` in UI</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Personal OAuth access token integration</li>
-                  </ul>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>Python CrewAI background loop polls Supabase every 20s and posts live content directly to LinkedIn & X feeds.</p>
                 </div>
 
-                {/* Capability 3: 4-in-1 AI Studio Suite */}
                 <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #10b981' }}>
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
                     <Wand2 size={28} color="#34d399" />
                   </div>
                   <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🤖 3. 4-in-1 AI Studio Suite (Gemini LLM)</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Generate post ideas, viral hooks, platform-tailored copy, hashtag volume research, and predictive engagement scores powered by Google Gemini AI.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Niche Post Ideas & Viral Hook Generator</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Predictive Engagement Analyzer (0-100% Score)</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> High volume & niche hashtag researcher</li>
-                  </ul>
-                </div>
-
-                {/* Capability 4: Photo / Image Upload */}
-                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #f59e0b' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
-                    <ImageIcon size={28} color="#fbbf24" />
-                  </div>
-                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>📸 4. Photo / Media Image Uploads</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Attach visual assets and photos to your posts using direct local file uploads or image URL links, with instant modal preview and card thumbnails.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Local image file picker & Base64 preview</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Image URL link embedding</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Card thumbnail display in Month Grid & Cards View</li>
-                  </ul>
-                </div>
-
-                {/* Capability 5: Real-time Notification Center */}
-                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #ec4899' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(236, 72, 153, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
-                    <Bell size={28} color="#f472b6" />
-                  </div>
-                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🔔 5. Real-Time Notification Center</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Stay informed with live notification alerts in the navbar for today's scheduled posts, pending draft ideas, and published status updates.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Navbar Bell icon with live red counter badge</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Today's scheduled posts reminder</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Real-time draft & published status updates</li>
-                  </ul>
-                </div>
-
-                {/* Capability 6: Auth Protection & Persistent Session */}
-                <div className="glass-panel" style={{ padding: '36px', borderRadius: '24px', borderTop: '5px solid #6366f1' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
-                    <Shield size={28} color="#818cf8" />
-                  </div>
-                  <h3 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '12px' }}>🔒 6. Auth Protection & Refresh Persistence</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                    Protected user access control ensures unauthenticated visitors cannot view your social plans, while browser refresh preserves your active tab state.
-                  </p>
-                  <ul style={{ color: '#e2e8f0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Protected Route Access (`/calendar`, `/ai-studio`)</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> Seamless page refresh persistence</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={16} color="#34d399" /> 1-Click Instant Demo Login button</li>
-                  </ul>
-                </div>
-
-              </div>
-            </section>
-
-            {/* HOW IT WORKS STEP-BY-STEP SECTION */}
-            <section style={{ maxWidth: '1100px', margin: '0 auto 90px auto', padding: '0 24px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-                <span className="badge badge-glow" style={{ marginBottom: '12px' }}>3 SIMPLE STEPS</span>
-                <h2 style={{ fontSize: '2.4rem', fontWeight: '800', marginTop: '6px' }}>
-                  How SocialSync AI Works
-                </h2>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', textAlign: 'center' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#8b5cf6', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px auto', fontSize: '1.25rem' }}>1</div>
-                  <h4 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '8px' }}>Sign In & Connect Accounts</h4>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>Log in to your workspace and paste your personal LinkedIn OAuth access token under Accounts.</p>
-                </div>
-
-                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', textAlign: 'center' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#06b6d4', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px auto', fontSize: '1.25rem' }}>2</div>
-                  <h4 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '8px' }}>Generate Copy & Schedule</h4>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>Use Gemini AI to write copy & pick a target date/time on the 7x5 Monthly Visual Grid.</p>
-                </div>
-
-                <div className="glass-panel" style={{ padding: '32px', borderRadius: '20px', textAlign: 'center' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#10b981', color: '#fff', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px auto', fontSize: '1.25rem' }}>3</div>
-                  <h4 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '8px' }}>Auto-Publish Live via Agents</h4>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>When the scheduled time arrives, the background CrewAI agent posts live to your feed!</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>Generate post ideas, viral copy, hashtag volume research, and predictive engagement scores.</p>
                 </div>
               </div>
             </section>
