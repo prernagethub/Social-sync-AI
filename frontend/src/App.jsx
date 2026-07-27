@@ -366,7 +366,29 @@ export default function App() {
         .order('scheduled_at', { ascending: true });
 
       if (fetchErr) throw fetchErr;
-      setPosts(data || []);
+
+      let allPosts = data || [];
+
+      // User-specific post filtering
+      if (currentUser?.email || currentUser?.id) {
+        const userEmail = currentUser.email?.toLowerCase();
+        const userId = currentUser.id;
+
+        const userSpecificPosts = allPosts.filter(p => {
+          const pEmail = p.user_email?.toLowerCase();
+          const pUserId = p.user_id;
+          // Match by email or user_id
+          if (userEmail && pEmail && pEmail === userEmail) return true;
+          if (userId && pUserId && String(pUserId) === String(userId)) return true;
+          // If legacy post has no user info attached, show it if no user posts exist yet
+          if (!pEmail && !pUserId) return true;
+          return false;
+        });
+
+        setPosts(userSpecificPosts);
+      } else {
+        setPosts(allPosts);
+      }
     } catch (err) {
       console.error('Supabase Query Error:', err);
       setError(err.message || 'Failed to fetch data from Supabase');
@@ -396,7 +418,7 @@ export default function App() {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [currentUser?.email, currentUser?.id]);
 
   // Notifications calculation
   const getNotifications = () => {
@@ -603,6 +625,8 @@ export default function App() {
     const combinedIsoDate = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
 
     const payload = {
+      user_email: currentUser?.email || null,
+      user_id: (currentUser?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUser.id)) ? currentUser.id : null,
       title: title.trim(),
       caption: caption.trim() || null,
       platform,
