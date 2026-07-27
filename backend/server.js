@@ -106,17 +106,47 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Trigger Auto Publisher Agent Endpoint
+app.post('/api/publish/auto', (req, res) => {
+  const agentPath = path.join(__dirname, '..', 'agents', 'auto_scheduler.py');
+  console.log('⚡ Triggering Auto-Scheduler Agent via Python:', agentPath);
+
+  exec(`python "${agentPath}" --once`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Auto-Scheduler Error:', stderr || error.message);
+      return res.status(500).json({ success: false, error: stderr || error.message });
+    }
+    console.log('Auto-Scheduler Output:', stdout);
+    res.json({ success: true, output: stdout });
+  });
+});
+
 // Trigger LinkedIn Publisher Agent Endpoint
 app.post('/api/publish/linkedin', (req, res) => {
-  const agentPath = path.join(__dirname, '..', 'agent', 'linkedin_publisher.py');
+  const agentPath = path.join(__dirname, '..', 'agents', 'auto_scheduler.py');
   console.log('⚡ Triggering LinkedIn Publisher Agent via Python:', agentPath);
 
-  exec(`python "${agentPath}"`, (error, stdout, stderr) => {
+  exec(`python "${agentPath}" --once`, (error, stdout, stderr) => {
     if (error) {
       console.error('LinkedIn Publisher Error:', stderr || error.message);
       return res.status(500).json({ success: false, error: stderr || error.message });
     }
     console.log('LinkedIn Publisher Output:', stdout);
+    res.json({ success: true, output: stdout });
+  });
+});
+
+// Trigger Twitter / X Publisher Agent Endpoint
+app.post('/api/publish/twitter', (req, res) => {
+  const agentPath = path.join(__dirname, '..', 'agents', 'twitter_publisher.py');
+  console.log('⚡ Triggering Twitter Publisher Agent via Python:', agentPath);
+
+  exec(`python "${agentPath}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Twitter Publisher Error:', stderr || error.message);
+      return res.status(500).json({ success: false, error: stderr || error.message });
+    }
+    console.log('Twitter Publisher Output:', stdout);
     res.json({ success: true, output: stdout });
   });
 });

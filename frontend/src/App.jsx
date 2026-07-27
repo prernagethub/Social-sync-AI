@@ -541,6 +541,14 @@ export default function App() {
     return true;
   };
 
+  const triggerAutoPublisherAgent = async () => {
+    try {
+      await fetch('http://localhost:5001/api/publish/auto', { method: 'POST' });
+    } catch (err) {
+      console.warn('Auto publisher trigger notice:', err);
+    }
+  };
+
   const triggerLinkedInPublisherAgent = async () => {
     try {
       await fetch('http://localhost:5001/api/publish/linkedin', { method: 'POST' });
@@ -553,12 +561,12 @@ export default function App() {
     if (!requireAuth()) return;
     setPublishingId(postId);
     try {
-      await triggerLinkedInPublisherAgent();
+      await triggerAutoPublisherAgent();
       try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch (err) { }
-      toast.success('Live LinkedIn Agent post published! 🚀', { autoClose: 2000 });
+      toast.success('Live Auto-Agent post published! 🚀', { autoClose: 2000 });
       await fetchPosts(false);
     } catch (err) {
-      toast.error(`LinkedIn Publish Error: ${err.message}`, { autoClose: 2000 });
+      toast.error(`Auto-Agent Publish Error: ${err.message}`, { autoClose: 2000 });
     } finally {
       setPublishingId(null);
     }
@@ -625,9 +633,7 @@ export default function App() {
         toast.success('New post scheduled successfully! 📅', { autoClose: 2000 });
       }
 
-      if (platform === 'linkedin') {
-        triggerLinkedInPublisherAgent();
-      }
+      triggerAutoPublisherAgent();
 
       await fetchPosts(false);
       closeModal();
