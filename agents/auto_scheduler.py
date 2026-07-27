@@ -88,77 +88,82 @@ def mark_post_published(post_id):
 
 def upload_linkedin_image_asset(access_token, author_urn, img_data):
   """
-  Uploads an image (web URL or Base64 string) to LinkedIn API v2
+  Uploads an image (web URL or Base64 data string) to LinkedIn Assets API
   Returns tuple: (shareMediaCategory, media_array)
   """
   if not img_data or not access_token:
     return "NONE", []
 
   img_str = str(img_data).strip()
+  image_bytes = None
+  mime_type = "image/jpeg"
 
-  # Case 1: Direct Web Image URL (HTTP / HTTPS)
-  if img_str.startswith("http://") or img_str.startswith("https://"):
-    print(f"📸 Attaching web image URL to LinkedIn post: {img_str[:60]}...")
-    return "IMAGE", [{
-      "status": "READY",
-      "description": { "text": "Attached Image" },
-      "originalUrl": img_str,
-      "title": { "text": "Post Image" }
-    }]
-
-  # Case 2: Base64 Data Image URL (data:image/...)
-  if img_str.startswith("data:image/"):
-    try:
+  try:
+    if img_str.startswith("http://") or img_str.startswith("https://"):
+      print(f"📸 Fetching web image from URL for LinkedIn asset upload: {img_str[:60]}...")
+      resp = requests.get(img_str, timeout=15)
+      if resp.status_code == 200:
+        image_bytes = resp.content
+        ct = resp.headers.get("Content-Type", "")
+        if "png" in ct.lower():
+          mime_type = "image/png"
+        elif "webp" in ct.lower():
+          mime_type = "image/webp"
+    elif img_str.startswith("data:image/"):
       import base64
-      print("📸 Registering & uploading Base64 image to LinkedIn Assets API...")
+      print("📸 Decoding Base64 image for LinkedIn asset upload...")
       header, encoded = img_str.split(",", 1)
       mime_type = header.split(";")[0].split(":")[1]
       image_bytes = base64.b64decode(encoded)
 
-      register_url = "https://api.linkedin.com/v2/assets?action=registerUpload"
-      reg_headers = {
+    if not image_bytes:
+      return "NONE", []
+
+    # Register upload with LinkedIn Assets API
+    register_url = "https://api.linkedin.com/v2/assets?action=registerUpload"
+    reg_headers = {
+      "Authorization": f"Bearer {access_token}",
+      "Content-Type": "application/json"
+    }
+    reg_payload = {
+      "registerUploadRequest": {
+        "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
+        "owner": author_urn,
+        "serviceRelationships": [
+          {
+            "relationshipType": "OWNER",
+            "identifier": "urn:li:userGeneratedContent"
+          }
+        ]
+      }
+    }
+
+    res = requests.post(register_url, headers=reg_headers, json=reg_payload)
+    if res.status_code in [200, 201]:
+      res_json = res.json()
+      upload_url = res_json['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl']
+      asset_urn = res_json['value']['asset']
+
+      # Upload raw image binary payload to LinkedIn media upload URL
+      up_headers = {
         "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
+        "Content-Type": mime_type
       }
-      reg_payload = {
-        "registerUploadRequest": {
-          "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-          "owner": author_urn,
-          "serviceRelationships": [
-            {
-              "relationshipType": "OWNER",
-              "identifier": "urn:li:userGeneratedContent"
-            }
-          ]
-        }
-      }
-
-      res = requests.post(register_url, headers=reg_headers, json=reg_payload)
-      if res.status_code in [200, 201]:
-        res_json = res.json()
-        upload_url = res_json['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl']
-        asset_urn = res_json['value']['asset']
-
-        # Upload image binary payload to LinkedIn media upload URL
-        up_headers = {
-          "Authorization": f"Bearer {access_token}",
-          "Content-Type": mime_type
-        }
-        upload_res = requests.put(upload_url, headers=up_headers, data=image_bytes)
-        if upload_res.status_code in [200, 201]:
-          print(f"✅ SUCCESS! Image binary uploaded to LinkedIn Assets! Asset URN: {asset_urn}")
-          return "IMAGE", [{
-            "status": "READY",
-            "description": { "text": "Attached Image" },
-            "media": asset_urn,
-            "title": { "text": "Post Image" }
-          }]
-        else:
-          print(f"Note image binary upload: {upload_res.status_code} {upload_res.text}")
+      upload_res = requests.put(upload_url, headers=up_headers, data=image_bytes)
+      if upload_res.status_code in [200, 201]:
+        print(f"✅ SUCCESS! Picture uploaded to LinkedIn Assets! Asset URN: {asset_urn}")
+        return "IMAGE", [{
+          "status": "READY",
+          "description": { "text": "Attached Image" },
+          "media": asset_urn,
+          "title": { "text": "Post Image" }
+        }]
       else:
-        print(f"Note asset register: {res.status_code} {res.text}")
-    except Exception as err:
-      print(f"B64 Image Upload Note: {err}")
+        print(f"Note image binary upload: {upload_res.status_code} {upload_res.text}")
+    else:
+      print(f"Note asset register: {res.status_code} {res.text}")
+  except Exception as err:
+    print(f"LinkedIn Image Upload Exception: {err}")
 
   return "NONE", []
 
