@@ -685,18 +685,28 @@ export default function App() {
       closeModal();
     } catch (err) {
       console.warn('Save attempt error:', err);
-      if (err.message && (err.message.includes('image_url') || err.message.includes('schema cache'))) {
-        delete payload.image_url;
+      if (err.message && (err.message.includes('column') || err.message.includes('schema cache') || err.message.includes('image_url'))) {
+        const cleanPayload = {
+          title: title.trim(),
+          caption: caption.trim() || null,
+          platform,
+          scheduled_at: combinedIsoDate,
+          status,
+          color: color || '#8b5cf6',
+          updated_at: new Date().toISOString()
+        };
+        if (payload.image_url) cleanPayload.image_url = payload.image_url;
+
         try {
           if (editingPost?.id) {
-            await supabase.from('content_calendar').update(payload).eq('id', editingPost.id);
+            await supabase.from('content_calendar').update(cleanPayload).eq('id', editingPost.id);
           } else {
-            await supabase.from('content_calendar').insert([payload]);
+            await supabase.from('content_calendar').insert([cleanPayload]);
           }
+          triggerAutoPublisherAgent();
           await fetchPosts(false);
           closeModal();
-          setSqlModalOpen(true);
-          toast.info('Post saved! Run SQL query for image support.', { autoClose: 2000 });
+          toast.success('Post saved successfully! 📅', { autoClose: 2000 });
           return;
         } catch (fallbackErr) {
           toast.error(`Supabase Error: ${fallbackErr.message}`, { autoClose: 2000 });
