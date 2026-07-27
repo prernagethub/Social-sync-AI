@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { ToastContainer, toast, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
@@ -33,6 +33,7 @@ import {
   LogIn,
   LogOut,
   UserCheck,
+  UserPlus,
   Shield,
   LayoutGrid,
   List,
@@ -88,6 +89,7 @@ import {
   researchHashtags,
   predictEngagement
 } from './services/aiEngine';
+import { auth } from './services/auth';
 
 // Import Modular Modal Components
 import AuthModal from './components/modals/AuthModal';
@@ -200,6 +202,9 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
+  const [authTitle, setAuthTitle] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Profile Edit State
   const [editName, setEditName] = useState('');
@@ -440,21 +445,80 @@ export default function App() {
 
   const notificationsList = getNotifications();
 
-  // Auth Handlers with Toastify 2s Notifications
-  const handleAuthSubmit = (e) => {
-    e.preventDefault();
-    const newUser = {
-      name: authName || authEmail.split('@')[0] || 'Alex Morgan',
-      email: authEmail || 'alex@socialsync.ai',
-      role: 'Admin',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${authEmail || 'user'}`
-    };
-    setCurrentUser(newUser);
-    localStorage.setItem('socialsync_user', JSON.stringify(newUser));
-    setAuthModalOpen(false);
-    toast.success(`Welcome back, ${newUser.name}! 👋`, { autoClose: 2000 });
-    navigate('/calendar');
-    try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }); } catch (err) { }
+  // Supabase Auth Listener for Google OAuth redirects
+  useEffect(() => {
+    if (isSupabaseConfigured()) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const meta = session.user.user_metadata || {};
+          const loggedInUser = {
+            id: session.user.id,
+            name: meta.full_name || meta.name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email,
+            role: 'Admin',
+            avatar: meta.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.email || 'user')}`,
+            title: meta.title || 'Workspace Owner'
+          };
+          setCurrentUser(loggedInUser);
+          localStorage.setItem('socialsync_user', JSON.stringify(loggedInUser));
+          setAuthModalOpen(false);
+          toast.success(`Welcome back, ${loggedInUser.name}! Signed in via Google 🚀`, { autoClose: 2500 });
+          try { confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } }); } catch (err) { }
+        }
+      });
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, []);
+
+  // ASPECT 1: Google OAuth Handler
+  const handleGoogleAuth = async () => {
+    try {
+      setAuthError('');
+      toast.info('Redirecting to Google Sign-In via Supabase...', { autoClose: 2000 });
+      await auth.signInWithGoogle();
+    } catch (err) {
+      console.error('Google Auth Error:', err);
+      setAuthError(err.message || 'Google Auth failed. Make sure Google provider is enabled in your Supabase dashboard.');
+      toast.error(err.message || 'Google Auth failed', { autoClose: 3500 });
+    }
+  };
+
+  // ASPECT 2 & 3: Supabase Email / Password Sign In & Sign Up
+  const handleAuthSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setAuthError('');
+    setIsSubmitting(true);
+
+    try {
+      if (authMode === 'signup') {
+        const { user } = await auth.signUpWithSupabase(
+          authName || authEmail.split('@')[0] || 'New Creator',
+          authEmail,
+          authPassword,
+          authTitle || 'Workspace Owner'
+        );
+        setCurrentUser(user);
+        setAuthModalOpen(false);
+        toast.success(`Account created in Supabase! Welcome, ${user.name}! 🎉`, { autoClose: 3000 });
+        navigate('/calendar');
+        try { confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } }); } catch (err) { }
+      } else {
+        const { user } = await auth.loginWithSupabase(authEmail, authPassword);
+        setCurrentUser(user);
+        setAuthModalOpen(false);
+        toast.success(`Welcome back, ${user.name}! Signed in via Supabase 🔑`, { autoClose: 2500 });
+        navigate('/calendar');
+        try { confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } }); } catch (err) { }
+      }
+    } catch (err) {
+      console.error('Authentication Error:', err);
+      setAuthError(err.message || 'Authentication failed. Please check your credentials.');
+      toast.error(err.message || 'Authentication error', { autoClose: 3500 });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
@@ -1393,9 +1457,14 @@ export default function App() {
                   </button>
                 </>
               ) : (
-                <button className="btn btn-cyan btn-sm" onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
-                  <LogIn size={15} /> Sign In
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setAuthMode('login'); setAuthError(''); setAuthModalOpen(true); }}>
+                    <LogIn size={15} /> Sign In
+                  </button>
+                  <button className="btn btn-cyan btn-sm" onClick={() => { setAuthMode('signup'); setAuthError(''); setAuthModalOpen(true); }}>
+                    <UserPlus size={15} /> Sign Up
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1431,9 +1500,14 @@ export default function App() {
                         Open My Content Calendar <ArrowRight size={20} />
                       </button>
                     ) : (
-                      <button className="btn btn-primary" style={{ padding: '16px 34px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}>
-                        <LogIn size={20} /> Sign In to Access Calendar <ArrowRight size={20} />
-                      </button>
+                      <>
+                        <button className="btn btn-cyan" style={{ padding: '16px 34px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => { setAuthMode('signup'); setAuthError(''); setAuthModalOpen(true); }}>
+                          <UserPlus size={20} /> Create Free Account <ArrowRight size={20} />
+                        </button>
+                        <button className="btn btn-primary" style={{ padding: '16px 28px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => { setAuthMode('login'); setAuthError(''); setAuthModalOpen(true); }}>
+                          <LogIn size={20} /> Sign In
+                        </button>
+                      </>
                     )}
 
                     <button className="btn btn-secondary" style={{ padding: '16px 28px', fontSize: '1.05rem', borderRadius: '14px' }} onClick={() => {
@@ -2177,13 +2251,20 @@ export default function App() {
         authModalOpen={authModalOpen}
         setAuthModalOpen={setAuthModalOpen}
         authMode={authMode}
+        setAuthMode={setAuthMode}
         authEmail={authEmail}
         setAuthEmail={setAuthEmail}
         authPassword={authPassword}
         setAuthPassword={setAuthPassword}
         authName={authName}
         setAuthName={setAuthName}
+        authTitle={authTitle}
+        setAuthTitle={setAuthTitle}
+        authError={authError}
+        setAuthError={setAuthError}
+        isSubmitting={isSubmitting}
         handleAuthSubmit={handleAuthSubmit}
+        handleGoogleAuth={handleGoogleAuth}
       />
 
       <ProfileModal
