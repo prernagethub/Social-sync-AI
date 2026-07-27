@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured, uploadImageToSupabase } from './supabaseClient';
 import { ToastContainer, toast, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
@@ -636,8 +636,17 @@ export default function App() {
       updated_at: new Date().toISOString()
     };
 
-    const targetImg = imageUrl || imagePreview;
+    let targetImg = imageUrl || imagePreview;
     if (targetImg) {
+      toast.info('Uploading photo attachment...', { autoClose: 1500 });
+      try {
+        const publicUrl = await uploadImageToSupabase(targetImg);
+        if (publicUrl) {
+          targetImg = publicUrl;
+        }
+      } catch (err) {
+        console.warn('Supabase storage upload note:', err);
+      }
       payload.image_url = targetImg;
     }
 

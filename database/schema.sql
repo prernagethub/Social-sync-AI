@@ -14,6 +14,8 @@ create table if not exists content_calendar (
 );
 
 alter table content_calendar add column if not exists image_url text;
+alter table content_calendar add column if not exists user_email text;
+alter table content_calendar add column if not exists user_id text;
 
 create table if not exists user_social_accounts (
     id uuid primary key default gen_random_uuid(),
