@@ -3,7 +3,7 @@
     {
       "id": "ws-1",
       "name": "Acme SaaS Brand",
-      "logo": "🚀",
+      "logo": "\ud83d\ude80",
       "role": "Admin",
       "members": [
         {
@@ -29,7 +29,7 @@
     {
       "id": "ws-2",
       "name": "Growth Agency HQ",
-      "logo": "⚡",
+      "logo": "\u26a1",
       "role": "Editor",
       "members": [
         {
@@ -85,10 +85,10 @@
       "workspaceId": "ws-1",
       "title": "5 AI Tools Transforming Modern Social Media",
       "platform": "linkedin",
-      "status": "scheduled",
+      "status": "published",
       "scheduledDate": "2026-07-26",
       "scheduledTime": "10:00",
-      "caption": "AI is no longer a luxury for marketing teams—it's the unfair advantage. 🤖🔥\n\nHere are 5 AI breakthroughs we use every single week to 10x our social media reach:\n\n1. Dynamic Post Scheduling based on engagement prediction\n2. AI-driven viral hook generators\n3. Automated hashtag competitive density analysis\n4. Multi-format content repurposing\n5. Predictive audience sentiment modeling\n\nWhich of these are you already testing in your workflow? Let's discuss in the comments below! 👇\n\n#ArtificialIntelligence #MarketingStrategy #SocialSync #GrowthHacking #SaaS",
+      "caption": "AI is no longer a luxury for marketing teams\u2014it's the unfair advantage. \ud83e\udd16\ud83d\udd25\n\nHere are 5 AI breakthroughs we use every single week to 10x our social media reach:\n\n1. Dynamic Post Scheduling based on engagement prediction\n2. AI-driven viral hook generators\n3. Automated hashtag competitive density analysis\n4. Multi-format content repurposing\n5. Predictive audience sentiment modeling\n\nWhich of these are you already testing in your workflow? Let's discuss in the comments below! \ud83d\udc47\n\n#ArtificialIntelligence #MarketingStrategy #SocialSync #GrowthHacking #SaaS",
       "hashtags": [
         "#ArtificialIntelligence",
         "#MarketingStrategy",
@@ -99,7 +99,8 @@
       "engagementScore": 92,
       "mediaUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
       "author": "Sarah Chen",
-      "createdAt": "2026-07-25T07:00:00.000Z"
+      "createdAt": "2026-07-25T07:00:00.000Z",
+      "updatedAt": "2026-07-27T10:27:53.839302+00:00"
     },
     {
       "id": "post-102",
@@ -109,7 +110,7 @@
       "status": "scheduled",
       "scheduledDate": "2026-07-27",
       "scheduledTime": "14:30",
-      "caption": "Stop writing social posts one by one manually.\n\nHere is our exact 4-step system to turn 1 core podcast into 20+ viral social assets in < 30 minutes 🧵👇\n\n1/ Record raw video/audio.\n2/ Run AI transcription & hook extractor.\n3/ Auto-format for X, LinkedIn & IG.\n4/ Schedule on SocialSync AI.",
+      "caption": "Stop writing social posts one by one manually.\n\nHere is our exact 4-step system to turn 1 core podcast into 20+ viral social assets in < 30 minutes \ud83e\uddf5\ud83d\udc47\n\n1/ Record raw video/audio.\n2/ Run AI transcription & hook extractor.\n3/ Auto-format for X, LinkedIn & IG.\n4/ Schedule on SocialSync AI.",
       "hashtags": [
         "#ContentCreation",
         "#GrowthTips",
@@ -128,7 +129,7 @@
       "status": "in_review",
       "scheduledDate": "2026-07-28",
       "scheduledTime": "18:00",
-      "caption": "Late nights, endless coffee, and infinite coffee cups. ☕✨\n\nOur team has been cooking up something massive for SocialSync 2.0. Swipe to see the sneak peek of our new AI Engagement Predictor! ➡️\n\nComment \"LAUNCH\" to get early VIP access before we go live next week! 🚀\n\n.#ProductLaunch #StartupLife #UIUXDesign #AICreators #TechStartup",
+      "caption": "Late nights, endless coffee, and infinite coffee cups. \u2615\u2728\n\nOur team has been cooking up something massive for SocialSync 2.0. Swipe to see the sneak peek of our new AI Engagement Predictor! \u27a1\ufe0f\n\nComment \"LAUNCH\" to get early VIP access before we go live next week! \ud83d\ude80\n\n.#ProductLaunch #StartupLife #UIUXDesign #AICreators #TechStartup",
       "hashtags": [
         "#ProductLaunch",
         "#StartupLife",
@@ -149,7 +150,7 @@
       "status": "draft",
       "scheduledDate": "2026-07-29",
       "scheduledTime": "12:15",
-      "caption": "When you test the new AI Hook Generator expecting corporate speak, but it outputs pure viral fire 🔥👀 #marketinghumor #socialmediamanager #startuplife #aitools",
+      "caption": "When you test the new AI Hook Generator expecting corporate speak, but it outputs pure viral fire \ud83d\udd25\ud83d\udc40 #marketinghumor #socialmediamanager #startuplife #aitools",
       "hashtags": [
         "#marketinghumor",
         "#socialmediamanager",
