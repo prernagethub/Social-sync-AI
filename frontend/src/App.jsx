@@ -471,7 +471,7 @@ export default function App() {
   useEffect(() => {
     if (isSupabaseConfigured()) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
           const meta = session.user.user_metadata || {};
           const loggedInUser = {
             id: session.user.id,
@@ -481,11 +481,20 @@ export default function App() {
             avatar: meta.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.email || 'user')}`,
             title: meta.title || 'Workspace Owner'
           };
+
+          const existingUserStr = localStorage.getItem('socialsync_user');
+          const alreadyWelcomed = localStorage.getItem('socialsync_google_welcomed');
+
           setCurrentUser(loggedInUser);
           localStorage.setItem('socialsync_user', JSON.stringify(loggedInUser));
           setAuthModalOpen(false);
-          toast.success(`Welcome back, ${loggedInUser.name}! Signed in via Google 🚀`, { autoClose: 2500 });
-          try { confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } }); } catch (err) { }
+
+          // Only trigger welcome toast ONCE per login session (not on page navigation/refresh)
+          if (event === 'SIGNED_IN' && !alreadyWelcomed && (!existingUserStr || JSON.parse(existingUserStr).email !== loggedInUser.email)) {
+            localStorage.setItem('socialsync_google_welcomed', 'true');
+            toast.success(`Welcome back, ${loggedInUser.name}! Signed in via Google 🚀`, { toastId: 'google-welcome-toast', autoClose: 2500 });
+            try { confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } }); } catch (err) { }
+          }
         }
       });
       return () => {
@@ -547,6 +556,10 @@ export default function App() {
     setCurrentUser(null);
     localStorage.removeItem('socialsync_user');
     localStorage.removeItem('socialsync_last_path');
+    localStorage.removeItem('socialsync_google_welcomed');
+    if (isSupabaseConfigured()) {
+      try { supabase.auth.signOut(); } catch (err) { }
+    }
     setNotificationOpen(false);
     setProfileModalOpen(false);
     toast.info('Signed out successfully! 👋', { autoClose: 2000 });
